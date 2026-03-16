@@ -1,0 +1,105 @@
+{
+  "users": [
+    {
+      "id": "3d1fc72e-46d3-4b7c-a7e5-08705feeaf75",
+      "name": "test",
+      "email": "test@example.com",
+      "isPremium": false,
+      "theme": "default",
+      "xp": 0,
+      "level": 1
+    },
+    {
+      "id": "0f88e92e-6691-4565-b170-05b79ea5d153",
+      "name": "raxmatilloabdulloxonov",
+      "email": "raxmatilloabdulloxonov@example.com",
+      "isPremium": false,
+      "theme": "default",
+      "xp": 0,
+      "level": 1
+    },
+    {
+      "id": "2363c1dc-7b19-4a55-ad4e-7ca392303fda",
+      "name": "qq",
+      "email": "qq@example.com",
+      "isPremium": false,
+      "theme": "default",
+      "xp": 0,
+      "level": 1
+    },
+    {
+      "id": "813f668f-a76f-4d5a-b2c1-0a97ecfa5ad5",
+      "name": "Smoke User",
+      "email": "smoke@example.com",
+      "passwordHash": "scrypt:58d455e05e5b208645f970896eca08da:bc6fec80bdc6d585e50ec9f278c12346aeb13fcc2e72a382978f298b71a8257f579ed1af419df593657f476a8034cc8eb3517aad2dba07a1c9f843f493165e0a",
+      "isPremium": false,
+      "theme": "default",
+      "createdAt": "2026-03-08T12:02:32.428Z"
+    }
+  ],
+  "tasksByUser": {
+    "3d1fc72e-46d3-4b7c-a7e5-08705feeaf75": [],
+    "0f88e92e-6691-4565-b170-05b79ea5d153": [],
+    "2363c1dc-7b19-4a55-ad4e-7ca392303fda": [],
+    "813f668f-a76f-4d5a-b2c1-0a97ecfa5ad5": []
+  },
+  "settingsByUser": {
+    "3d1fc72e-46d3-4b7c-a7e5-08705feeaf75": {
+      "focus": 25,
+      "shortBreak": 5,
+      "longBreak": 15,
+      "autoStartBreaks": false,
+      "autoStartPomodoros": false,
+      "alarmSound": "digital"
+    },
+    "0f88e92e-6691-4565-b170-05b79ea5d153": {
+      "focus": 25,
+      "shortBreak": 5,
+      "longBreak": 15,
+      "autoStartBreaks": false,
+      "autoStartPomodoros": false,
+      "alarmSound": "digital"
+    },
+    "2363c1dc-7b19-4a55-ad4e-7ca392303fda": {
+      "focus": 25,
+      "shortBreak": 5,
+      "longBreak": 15,
+      "autoStartBreaks": false,
+      "autoStartPomodoros": false,
+      "alarmSound": "digital"
+    },
+    "813f668f-a76f-4d5a-b2c1-0a97ecfa5ad5": {
+      "focus": 25,
+      "shortBreak": 5,
+      "longBreak": 15,
+      "autoStartBreaks": false,
+      "autoStartPomodoros": false,
+      "alarmSound": "digital"
+    }
+  },
+  "statsByUser": {
+    "3d1fc72e-46d3-4b7c-a7e5-08705feeaf75": [],
+    "0f88e92e-6691-4565-b170-05b79ea5d153": [],
+    "2363c1dc-7b19-4a55-ad4e-7ca392303fda": [],
+    "813f668f-a76f-4d5a-b2c1-0a97ecfa5ad5": []
+  },
+  "progressByUser": {
+    "813f668f-a76f-4d5a-b2c1-0a97ecfa5ad5": {
+      "xp": 0,
+      "level": 0,
+      "totalXp": 0,
+      "unlockedRewards": [],
+      "latestRewardKey": "",
+      "streak": 0,
+      "lastActiveDate": "",
+      "dailyGoal": {
+        "date": "",
+        "targetXp": 150,
+        "currentXp": 0,
+        "completed": false
+      },
+      "theme": "default",
+      "isPremium": false
+    }
+  }
+}

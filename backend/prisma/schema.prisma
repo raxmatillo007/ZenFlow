@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO_MONTHLY
+  PRO_YEARLY
+  PRO_LIFETIME
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentProvider {
+  STRIPE
+  CLICK
+  PAYME
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  REQUIRES_ACTION
+  SUCCEEDED
+  FAILED
+  CANCELED
+  REFUNDED
+}
+
+model User {
+  id                 String              @id
+  name               String
+  email              String              @unique
+  passwordHash       String
+  isPremium          Boolean             @default(false)
+  theme              String              @default("default")
+  premiumUntil       DateTime?
+  billingPlan        SubscriptionPlan    @default(FREE)
+  stripeCustomerId   String?             @unique
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  tasks              Task[]
+  sessions           FocusSession[]
+  progress           UserProgress?
+  settings           TimerSettings?
+  subscriptions      BillingSubscription[]
+  paymentTransactions PaymentTransaction[]
+}
+
+model Task {
+  id        String   @id
+  text      String
+  completed Boolean  @default(false)
+  priority  String   @default("medium")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model TimerSettings {
+  id                 String   @id @default(cuid())
+  focus              Int      @default(25)
+  shortBreak         Int      @default(5)
+  longBreak          Int      @default(15)
+  autoStartBreaks    Boolean  @default(false)
+  autoStartPomodoros Boolean  @default(false)
+  alarmSound         String   @default("digital")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FocusSession {
+  id        String   @id @default(cuid())
+  mode      String
+  duration  Int
+  timestamp DateTime
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp(sort: Desc)])
+}
+
+model UserProgress {
+  id              String   @id @default(cuid())
+  xp              Int      @default(0)
+  level           Int      @default(0)
+  totalXp         Int      @default(0)
+  unlockedRewards Json     @default("[]")
+  latestRewardKey String   @default("")
+  streak          Int      @default(0)
+  lastActiveDate  String   @default("")
+  dailyGoal       Json     @default("{\"date\":\"\",\"targetXp\":150,\"currentXp\":0,\"completed\":false}")
+  theme           String   @default("default")
+  isPremium       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BillingSubscription {
+  id                   String             @id @default(cuid())
+  plan                 SubscriptionPlan
+  status               SubscriptionStatus @default(INACTIVE)
+  provider             PaymentProvider
+  providerCustomerId   String?
+  providerSubscriptionId String?
+  providerPriceId      String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  metadata             Json?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([provider, providerSubscriptionId])
+}
+
+model PaymentTransaction {
+  id                 String          @id @default(cuid())
+  provider           PaymentProvider
+  status             PaymentStatus   @default(PENDING)
+  plan               SubscriptionPlan
+  amount             Int
+  currency           String          @default("USD")
+  providerPaymentId  String?
+  checkoutUrl        String?
+  paymentUrl         String?
+  paidAt             DateTime?
+  failedAt           DateTime?
+  metadata           Json?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([provider, providerPaymentId])
+}

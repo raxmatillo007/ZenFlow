@@ -1,0 +1,492 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+body {
+  background-color: #0f172a;
+}
+
+/* Animations */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.9;
+    text-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-float-slow {
+  animation: float 20s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float 15s ease-in-out infinite reverse;
+}
+
+.animate-float-fast {
+  animation: float 10s ease-in-out infinite;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  @apply bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl;
+}
+
+.glass-input {
+  @apply bg-black/20 border border-white/5 focus:border-white/20 focus:bg-black/30 transition-all duration-300;
+}
+
+@keyframes celebration-fall {
+  0% {
+    transform: translateY(-18vh) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(108vh) rotate(560deg);
+    opacity: 0;
+  }
+}
+
+.celebration-confetti {
+  position: absolute;
+  top: -10%;
+  width: 10px;
+  height: 16px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fde68a, #f59e0b);
+  animation-name: celebration-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes reward-bob {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.02);
+  }
+}
+
+@keyframes reward-shine {
+  0% {
+    transform: translateX(-110%) rotate(-20deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  45% {
+    transform: translateX(130%) rotate(-20deg);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.celebration-badge {
+  width: 112px;
+  height: 112px;
+  border-radius: 28px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, rgba(255, 223, 113, 0.34), rgba(245, 158, 11, 0.12));
+  border: 1px solid rgba(252, 211, 77, 0.55);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.35),
+    0 0 36px rgba(245, 158, 11, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  animation: reward-bob 2.4s ease-in-out infinite;
+  overflow: hidden;
+}
+
+.celebration-badge-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  border: 1px solid rgba(252, 211, 77, 0.3);
+}
+
+.celebration-badge-layer-back {
+  transform: translate(8px, 8px);
+  opacity: 0.28;
+  background: linear-gradient(160deg, rgba(251, 191, 36, 0.2), rgba(120, 53, 15, 0.12));
+}
+
+.celebration-badge-layer-mid {
+  transform: translate(4px, 4px);
+  opacity: 0.45;
+  background: linear-gradient(160deg, rgba(252, 211, 77, 0.24), rgba(202, 138, 4, 0.14));
+}
+
+.celebration-badge-core {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff4cc;
+  background: linear-gradient(160deg, rgba(253, 224, 71, 0.32), rgba(202, 138, 4, 0.22));
+  border: 1px solid rgba(253, 224, 71, 0.5);
+  box-shadow:
+    inset 0 -8px 16px rgba(0, 0, 0, 0.22),
+    inset 0 8px 12px rgba(255, 255, 255, 0.12),
+    0 10px 18px rgba(0, 0, 0, 0.25);
+  position: relative;
+  z-index: 2;
+}
+
+.celebration-badge-badge {
+  background: linear-gradient(145deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.15));
+  border-color: rgba(252, 211, 77, 0.55);
+  box-shadow: 0 0 35px rgba(245, 158, 11, 0.35), inset 0 0 25px rgba(255, 255, 255, 0.15);
+}
+
+.celebration-badge-badge .celebration-badge-layer {
+  border-color: rgba(252, 211, 77, 0.3);
+}
+
+.celebration-badge-badge-core {
+  background: linear-gradient(160deg, rgba(253, 224, 71, 0.32), rgba(202, 138, 4, 0.22));
+  border-color: rgba(253, 224, 71, 0.5);
+}
+
+.celebration-badge-aura {
+  background: linear-gradient(145deg, rgba(111, 59, 130, 0.58), rgba(59, 37, 84, 0.58));
+  border-color: rgba(244, 114, 182, 0.5);
+  box-shadow:
+    0 0 35px rgba(244, 114, 182, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 0 24px rgba(255, 255, 255, 0.08);
+}
+
+.celebration-badge-aura .celebration-badge-layer {
+  border-color: rgba(244, 114, 182, 0.24);
+}
+
+.celebration-badge-aura-core {
+  background: linear-gradient(160deg, rgba(177, 96, 156, 0.65), rgba(105, 60, 141, 0.45));
+  border-color: rgba(255, 182, 228, 0.32);
+}
+
+.celebration-badge-theme {
+  background: linear-gradient(145deg, rgba(34, 211, 238, 0.3), rgba(59, 130, 246, 0.14));
+  border-color: rgba(103, 232, 249, 0.55);
+  box-shadow: 0 0 35px rgba(34, 211, 238, 0.3), inset 0 0 25px rgba(255, 255, 255, 0.12);
+}
+
+.celebration-badge-theme .celebration-badge-layer {
+  border-color: rgba(103, 232, 249, 0.3);
+}
+
+.celebration-badge-theme-core {
+  background: linear-gradient(160deg, rgba(103, 232, 249, 0.3), rgba(59, 130, 246, 0.24));
+  border-color: rgba(103, 232, 249, 0.45);
+}
+
+.celebration-badge-flare {
+  background: linear-gradient(145deg, rgba(249, 115, 22, 0.45), rgba(220, 38, 38, 0.2));
+  border-color: rgba(251, 146, 60, 0.55);
+  box-shadow: 0 0 35px rgba(249, 115, 22, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.12);
+}
+.celebration-badge-flare-core {
+  background: linear-gradient(160deg, rgba(251, 146, 60, 0.4), rgba(239, 68, 68, 0.24));
+  border-color: rgba(251, 146, 60, 0.5);
+}
+
+.celebration-badge-nova {
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.42), rgba(37, 99, 235, 0.2));
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow: 0 0 35px rgba(59, 130, 246, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.12);
+}
+.celebration-badge-nova-core {
+  background: linear-gradient(160deg, rgba(96, 165, 250, 0.42), rgba(59, 130, 246, 0.25));
+  border-color: rgba(147, 197, 253, 0.48);
+}
+
+.celebration-badge-zen {
+  background: linear-gradient(145deg, rgba(20, 184, 166, 0.4), rgba(13, 148, 136, 0.18));
+  border-color: rgba(45, 212, 191, 0.52);
+  box-shadow: 0 0 35px rgba(45, 212, 191, 0.25), inset 0 0 25px rgba(255, 255, 255, 0.11);
+}
+.celebration-badge-zen-core {
+  background: linear-gradient(160deg, rgba(45, 212, 191, 0.38), rgba(20, 184, 166, 0.2));
+  border-color: rgba(94, 234, 212, 0.46);
+}
+
+.celebration-badge-focus {
+  background: linear-gradient(145deg, rgba(79, 70, 229, 0.42), rgba(30, 64, 175, 0.2));
+  border-color: rgba(129, 140, 248, 0.52);
+  box-shadow: 0 0 35px rgba(79, 70, 229, 0.26), inset 0 0 25px rgba(255, 255, 255, 0.11);
+}
+.celebration-badge-focus-core {
+  background: linear-gradient(160deg, rgba(129, 140, 248, 0.38), rgba(79, 70, 229, 0.22));
+  border-color: rgba(165, 180, 252, 0.46);
+}
+
+.celebration-badge-storm {
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.45), rgba(56, 189, 248, 0.2));
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 35px rgba(56, 189, 248, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.11);
+}
+.celebration-badge-storm-core {
+  background: linear-gradient(160deg, rgba(56, 189, 248, 0.42), rgba(14, 165, 233, 0.24));
+  border-color: rgba(125, 211, 252, 0.48);
+}
+
+.celebration-badge-forest {
+  background: linear-gradient(145deg, rgba(22, 163, 74, 0.42), rgba(34, 197, 94, 0.18));
+  border-color: rgba(74, 222, 128, 0.55);
+  box-shadow: 0 0 35px rgba(74, 222, 128, 0.26), inset 0 0 25px rgba(255, 255, 255, 0.11);
+}
+.celebration-badge-forest-core {
+  background: linear-gradient(160deg, rgba(74, 222, 128, 0.4), rgba(34, 197, 94, 0.22));
+  border-color: rgba(134, 239, 172, 0.46);
+}
+
+.celebration-badge-lumen {
+  background: linear-gradient(145deg, rgba(250, 204, 21, 0.42), rgba(245, 158, 11, 0.18));
+  border-color: rgba(250, 204, 21, 0.58);
+  box-shadow: 0 0 35px rgba(250, 204, 21, 0.3), inset 0 0 25px rgba(255, 255, 255, 0.12);
+}
+.celebration-badge-lumen-core {
+  background: linear-gradient(160deg, rgba(250, 204, 21, 0.42), rgba(245, 158, 11, 0.24));
+  border-color: rgba(253, 224, 71, 0.5);
+}
+
+.celebration-badge-pulse {
+  background: linear-gradient(145deg, rgba(236, 72, 153, 0.44), rgba(190, 24, 93, 0.2));
+  border-color: rgba(244, 114, 182, 0.56);
+  box-shadow: 0 0 35px rgba(236, 72, 153, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.11);
+}
+.celebration-badge-pulse-core {
+  background: linear-gradient(160deg, rgba(244, 114, 182, 0.4), rgba(219, 39, 119, 0.23));
+  border-color: rgba(249, 168, 212, 0.46);
+}
+
+.celebration-badge-crown {
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.42), rgba(147, 51, 234, 0.2));
+  border-color: rgba(196, 181, 253, 0.56);
+  box-shadow: 0 0 35px rgba(168, 85, 247, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.11);
+}
+.celebration-badge-crown-core {
+  background: linear-gradient(160deg, rgba(196, 181, 253, 0.4), rgba(147, 51, 234, 0.22));
+  border-color: rgba(221, 214, 254, 0.48);
+}
+
+.celebration-badge-shine {
+  position: absolute;
+  top: -10%;
+  left: -40%;
+  width: 45%;
+  height: 130%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
+  filter: blur(1px);
+  transform: rotate(-20deg);
+  animation: reward-shine 2.6s ease-in-out infinite;
+}
+
+.celebration-badge-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(253, 224, 71, 0.9);
+  box-shadow: 0 0 12px rgba(253, 224, 71, 0.8);
+}
+
+.celebration-badge-dot-a {
+  top: 14px;
+  right: 12px;
+}
+
+.celebration-badge-dot-b {
+  bottom: 14px;
+  left: 12px;
+}
+
+.reward-cube {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(252, 211, 77, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -10px 18px rgba(0, 0, 0, 0.22),
+    0 10px 18px rgba(0, 0, 0, 0.28),
+    0 0 14px rgba(245, 158, 11, 0.2);
+  transform: none;
+}
+
+.reward-glyph {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.celebration-glyph {
+  position: relative;
+  z-index: 2;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 900;
+  font-size: 12px;
+  color: #fff8dc;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+}
+
+.reward-cube::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -35%;
+  width: 40%;
+  height: 120%;
+  transform: rotate(-18deg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
+  animation: reward-shine 2.8s ease-in-out infinite;
+}
+
+.reward-cube::before {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 12px;
+  opacity: 0.55;
+}
+
+.reward-cube-icon {
+  position: relative;
+  z-index: 2;
+  color: #fff8d6;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  stroke-width: 2.4px;
+}
+
+.reward-cube-static::after {
+  animation: none;
+  opacity: 0.18;
+}
+
+.reward-cube-badge {
+  background: linear-gradient(145deg, rgba(251, 191, 36, 0.34), rgba(245, 158, 11, 0.18));
+  border-color: rgba(252, 211, 77, 0.55);
+}
+
+.reward-cube-aura {
+  background: linear-gradient(145deg, rgba(111, 59, 130, 0.58), rgba(59, 37, 84, 0.58));
+  border-color: rgba(244, 114, 182, 0.48);
+  box-shadow:
+    0 0 16px rgba(244, 114, 182, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 24px rgba(255, 255, 255, 0.06);
+}
+
+.reward-cube-theme {
+  background: linear-gradient(145deg, rgba(34, 211, 238, 0.35), rgba(59, 130, 246, 0.18));
+  border-color: rgba(103, 232, 249, 0.55);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.24), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-flare {
+  background: linear-gradient(145deg, rgba(249, 115, 22, 0.36), rgba(220, 38, 38, 0.2));
+  border-color: rgba(251, 146, 60, 0.58);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.26), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-nova {
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.38), rgba(37, 99, 235, 0.2));
+  border-color: rgba(96, 165, 250, 0.58);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.26), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-zen {
+  background: linear-gradient(145deg, rgba(20, 184, 166, 0.36), rgba(13, 148, 136, 0.18));
+  border-color: rgba(45, 212, 191, 0.56);
+  box-shadow: 0 0 16px rgba(45, 212, 191, 0.24), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-focus {
+  background: linear-gradient(145deg, rgba(79, 70, 229, 0.38), rgba(30, 64, 175, 0.2));
+  border-color: rgba(129, 140, 248, 0.56);
+  box-shadow: 0 0 16px rgba(79, 70, 229, 0.24), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-storm {
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.4), rgba(56, 189, 248, 0.2));
+  border-color: rgba(56, 189, 248, 0.56);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.26), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-forest {
+  background: linear-gradient(145deg, rgba(22, 163, 74, 0.38), rgba(34, 197, 94, 0.18));
+  border-color: rgba(74, 222, 128, 0.56);
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.24), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-lumen {
+  background: linear-gradient(145deg, rgba(250, 204, 21, 0.4), rgba(245, 158, 11, 0.2));
+  border-color: rgba(253, 224, 71, 0.58);
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.28), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-pulse {
+  background: linear-gradient(145deg, rgba(236, 72, 153, 0.4), rgba(190, 24, 93, 0.2));
+  border-color: rgba(244, 114, 182, 0.58);
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.26), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+.reward-cube-crown {
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.4), rgba(147, 51, 234, 0.2));
+  border-color: rgba(196, 181, 253, 0.58);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.25), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}

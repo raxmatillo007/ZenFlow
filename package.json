@@ -1,0 +1,42 @@
+{
+  "name": "vite-react-typescript-starter",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "node backend/server.js",
+    "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
+    "build": "vite build",
+    "db:generate": "prisma generate --schema backend/prisma/schema.prisma",
+    "db:push": "prisma db push --schema backend/prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema backend/prisma/schema.prisma",
+    "db:studio": "prisma studio --schema backend/prisma/schema.prisma",
+    "db:import-json": "node backend/scripts/import-json-to-prisma.js",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "axios": "^1.9.0",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "google-auth-library": "^9.15.1",
+    "lucide-vue-next": "^0.511.0",
+    "prisma": "^6.5.0",
+    "tailwind-merge": "^3.4.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.27.0",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.27.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^6.3.5"
+  }
+}
