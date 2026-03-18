@@ -39,6 +39,24 @@ const defaultProgress = {
   isPremium: false
 };
 
+const requestMessages = {
+  uz: {
+    timeout: "Server javobi sekinlashdi. Bir necha soniya kutib yana urinib ko'ring.",
+    network: "Server vaqtincha tayyor emas. Bir oz kutib qayta urinib ko'ring.",
+    generic: "Xatolik yuz berdi. Yana urinib ko'ring."
+  },
+  en: {
+    timeout: 'Server is taking too long to respond. Wait a few seconds and try again.',
+    network: 'Server is temporarily unavailable or waking up. Please try again shortly.',
+    generic: 'Something went wrong. Please try again.'
+  },
+  ru: {
+    timeout: 'Сервер отвечает слишком долго. Подождите несколько секунд и попробуйте снова.',
+    network: 'Сервер временно недоступен или просыпается. Попробуйте еще раз через несколько секунд.',
+    generic: 'Произошла ошибка. Попробуйте снова.'
+  }
+};
+
 const setCurrentUser = (user) => {
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
 };
@@ -62,6 +80,20 @@ export const clearAuthState = () => {
   clearCurrentUser();
 };
 
+export const getFriendlyRequestError = (error, language = 'uz') => {
+  const locale = requestMessages[language] || requestMessages.uz;
+
+  if (error?.code === 'ECONNABORTED') {
+    return locale.timeout;
+  }
+
+  if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
+    return locale.network;
+  }
+
+  return error?.response?.data?.message || error?.message || locale.generic;
+};
+
 export const getCurrentUser = () => {
   const raw = localStorage.getItem(CURRENT_USER_KEY);
   return raw ? JSON.parse(raw) : null;
@@ -83,7 +115,10 @@ api.interceptors.response.use(
       clearAuthState();
     }
     if (error?.code === 'ECONNABORTED') {
-      error.message = 'Server juda sekin javob berdi. Render free server uyg`onayotgan bo`lishi mumkin, yana urinib ko`ring.';
+      error.message = 'Server juda sekin javob berdi. Render free server uyg`onayotgan bo`lishi mumkin, biroz kutib yana urinib ko`ring.';
+    }
+    if (error?.code === 'ERR_NETWORK') {
+      error.message = 'Server bilan aloqa vaqtincha uzildi. Render free server hali uyg`onayotgan bo`lishi mumkin.';
     }
     return Promise.reject(error);
   }
