@@ -1,8 +1,12 @@
 import axios from 'axios';
 
+const isDev = import.meta.env.DEV;
+const apiBaseURL = import.meta.env.VITE_API_URL || (isDev ? 'http://localhost:4000/api' : '/api');
+const apiTimeout = isDev ? 10000 : 60000;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api'),
-  timeout: 10000
+  baseURL: apiBaseURL,
+  timeout: apiTimeout
 });
 
 const CURRENT_USER_KEY = 'zenflow-user';
@@ -77,6 +81,9 @@ api.interceptors.response.use(
   (error) => {
     if (error?.response?.status === 401) {
       clearAuthState();
+    }
+    if (error?.code === 'ECONNABORTED') {
+      error.message = 'Server juda sekin javob berdi. Render free server uyg`onayotgan bo`lishi mumkin, yana urinib ko`ring.';
     }
     return Promise.reject(error);
   }
