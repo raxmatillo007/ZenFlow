@@ -25,10 +25,23 @@ const NAME_MIN_LENGTH = 2;
 const NAME_MAX_LENGTH = 50;
 const PASSWORD_MIN_LENGTH = 8;
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const allowedOrigins = new Set([...CORS_ORIGINS, APP_URL].filter(Boolean));
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.has(origin)) return true;
+
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.vercel.app');
+  } catch {
+    return false;
+  }
+};
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || CORS_ORIGINS.length === 0 || CORS_ORIGINS.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
     return callback(new Error('CORS origin not allowed'));
