@@ -1166,79 +1166,86 @@ app.get('/api/billing/status', requireAuth, async (req, res) => {
 });
 
 app.post('/api/billing/checkout', requireAuth, async (req, res) => {
-  const { planCode, methodCode } = req.body ?? {};
-  const plan = billingPlans[String(planCode || '')];
-  const method = billingProviders[String(methodCode || '')];
+  try {
+    const { planCode, methodCode } = req.body ?? {};
+    const plan = billingPlans[String(planCode || '')];
+    const method = billingProviders[String(methodCode || '')];
 
-  if (!plan || !method) {
-    return res.status(400).json({ message: 'Invalid billing plan or payment method' });
-  }
+    if (!plan || !method) {
+      return res.status(400).json({ message: 'Invalid billing plan or payment method' });
+    }
 
-  if (!method.configured) {
+    if (!method.configured) {
+      return res.status(200).json({
+        ok: false,
+        mode: 'mock',
+        configured: false,
+        provider: method.provider,
+        message: `${method.label} gateway is not configured yet`
+      });
+    }
+
+    if (method.provider !== 'STRIPE' || !stripe) {
+      return res.status(400).json({ message: 'Selected payment provider is not available yet' });
+    }
+
+    const priceId = stripePriceIds[plan.code];
+    if (!priceId) {
+      return res.status(500).json({ message: `Stripe price is missing for ${plan.label}` });
+    }
+
+    const customerId = await ensureStripeCustomer(req.user);
+    const mode = getStripeModeForPlan(plan.code);
+    const session = await stripe.checkout.sessions.create({
+      mode,
+      customer: customerId,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1
+        }
+      ],
+      allow_promotion_codes: true,
+      success_url: STRIPE_SUCCESS_URL,
+      cancel_url: STRIPE_CANCEL_URL,
+      metadata: {
+        userId: req.user.id,
+        planCode: plan.code,
+        subscriptionPlan: plan.plan
+      }
+    });
+
+    await prisma.paymentTransaction.create({
+      data: {
+        userId: req.user.id,
+        provider: 'STRIPE',
+        status: 'PENDING',
+        plan: plan.plan,
+        amount: plan.amount,
+        currency: plan.currency,
+        providerPaymentId: session.id,
+        checkoutUrl: session.url || null,
+        paymentUrl: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+        metadata: {
+          mode,
+          planCode: plan.code
+        }
+      }
+    });
+
     return res.status(200).json({
-      ok: false,
-      mode: 'mock',
-      configured: false,
+      ok: true,
+      mode,
       provider: method.provider,
-      message: `${method.label} gateway is not configured yet`
+      sessionId: session.id,
+      checkoutUrl: session.url
+    });
+  } catch (error) {
+    console.error('Stripe checkout creation failed:', error);
+    return res.status(500).json({
+      message: error?.message || 'Stripe checkout yaratilmadi'
     });
   }
-
-  if (method.provider !== 'STRIPE' || !stripe) {
-    return res.status(400).json({ message: 'Selected payment provider is not available yet' });
-  }
-
-  const priceId = stripePriceIds[plan.code];
-  if (!priceId) {
-    return res.status(500).json({ message: `Stripe price is missing for ${plan.label}` });
-  }
-
-  const customerId = await ensureStripeCustomer(req.user);
-  const mode = getStripeModeForPlan(plan.code);
-  const session = await stripe.checkout.sessions.create({
-    mode,
-    customer: customerId,
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1
-      }
-    ],
-    allow_promotion_codes: true,
-    success_url: STRIPE_SUCCESS_URL,
-    cancel_url: STRIPE_CANCEL_URL,
-    metadata: {
-      userId: req.user.id,
-      planCode: plan.code,
-      subscriptionPlan: plan.plan
-    }
-  });
-
-  await prisma.paymentTransaction.create({
-    data: {
-      userId: req.user.id,
-      provider: 'STRIPE',
-      status: 'PENDING',
-      plan: plan.plan,
-      amount: plan.amount,
-      currency: plan.currency,
-      providerPaymentId: session.id,
-      checkoutUrl: session.url || null,
-      paymentUrl: typeof session.payment_intent === 'string' ? session.payment_intent : null,
-      metadata: {
-        mode,
-        planCode: plan.code
-      }
-    }
-  });
-
-  return res.status(200).json({
-    ok: true,
-    mode,
-    provider: method.provider,
-    sessionId: session.id,
-    checkoutUrl: session.url
-  });
 });
 
 app.post('/api/billing/confirm-session', requireAuth, async (req, res) => {
