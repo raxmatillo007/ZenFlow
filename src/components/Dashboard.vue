@@ -37,7 +37,7 @@ import {
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { clsx } from 'clsx';
 import { useLanguage } from '../context/language';
-import { authService, dataService, getAuthToken } from '../services/api';
+import { authService, billingService, dataService, getAuthToken } from '../services/api';
 import {
   xpNeededForLevel,
   getOakStage,
@@ -101,6 +101,37 @@ let progressSyncTimer = null;
 let settingsSyncTimer = null;
 let sessionsSyncTimer = null;
 
+const clearBillingQuery = () => {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('billing');
+  url.searchParams.delete('session_id');
+  window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+};
+
+const syncBillingFromUrl = async () => {
+  const url = new URL(window.location.href);
+  const billingState = url.searchParams.get('billing');
+  const sessionId = url.searchParams.get('session_id');
+
+  if (billingState === 'success' && sessionId) {
+    try {
+      const response = await billingService.confirmCheckout(sessionId);
+      if (response?.ok && response?.billing) {
+        setIsPremium(Boolean(response.billing.isPremium));
+      }
+    } catch (error) {
+      console.error('Stripe checkout tasdiqlanmadi:', error);
+    } finally {
+      clearBillingQuery();
+    }
+    return;
+  }
+
+  if (billingState === 'cancel') {
+    clearBillingQuery();
+  }
+};
+
 const localDateStamp = () => {
   const now = new Date();
   const year = now.getFullYear();
@@ -143,6 +174,7 @@ onMounted(() => {
           currentXp: Number(bootstrap.progress.dailyGoal?.currentXp) || 0,
           completed: Boolean(bootstrap.progress.dailyGoal?.completed)
         });
+        await syncBillingFromUrl();
       } catch (error) {
         console.error('Backend bootstrap xatoligi:', error);
       }

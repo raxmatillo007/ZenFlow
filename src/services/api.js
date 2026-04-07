@@ -82,12 +82,25 @@ export const clearAuthState = () => {
 
 export const getFriendlyRequestError = (error, language = 'uz') => {
   const locale = requestMessages[language] || requestMessages.uz;
+  const rawMessage = String(error?.message || '').toLowerCase();
 
-  if (error?.code === 'ECONNABORTED') {
+  if (
+    error?.code === 'ECONNABORTED' ||
+    rawMessage.includes('timeout') ||
+    rawMessage.includes('sekin javob')
+  ) {
     return locale.timeout;
   }
 
-  if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
+  if (
+    error?.code === 'ERR_NETWORK' ||
+    rawMessage === 'network error' ||
+    rawMessage.includes('network') ||
+    rawMessage.includes('server bilan aloqa') ||
+    rawMessage.includes('temporarily unavailable') ||
+    rawMessage.includes('waking up') ||
+    rawMessage.includes("uyg`on")
+  ) {
     return locale.network;
   }
 
@@ -147,10 +160,23 @@ export const authService = {
   },
 
   async logout() {
+    const token = getAuthToken();
+    clearAuthState();
+
+    if (!token) return;
+
     try {
-      await api.post('/auth/logout');
-    } finally {
-      clearAuthState();
+      await api.post(
+        '/auth/logout',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+    } catch {
+      // The backend does not keep a server-side session, so local logout is enough.
     }
   },
 
@@ -252,6 +278,11 @@ export const billingService = {
 
   async createCheckout({ planCode, methodCode }) {
     const { data } = await api.post('/billing/checkout', { planCode, methodCode });
+    return data;
+  },
+
+  async confirmCheckout(sessionId) {
+    const { data } = await api.post('/billing/confirm-session', { sessionId });
     return data;
   },
 

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import Stripe from 'stripe';
 import { OAuth2Client } from 'google-auth-library';
 import {
   randomUUID,
@@ -25,6 +26,11 @@ const NAME_MIN_LENGTH = 2;
 const NAME_MAX_LENGTH = 50;
 const PASSWORD_MIN_LENGTH = 8;
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || `${APP_URL}/?billing=success&session_id={CHECKOUT_SESSION_ID}`;
+const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || `${APP_URL}/?billing=cancel`;
+const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 const allowedOrigins = new Set([...CORS_ORIGINS, APP_URL].filter(Boolean));
 
 const isAllowedOrigin = (origin) => {
@@ -47,6 +53,33 @@ app.use(cors({
     return callback(new Error('CORS origin not allowed'));
   }
 }));
+
+app.post('/api/billing/webhook/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe || !STRIPE_WEBHOOK_SECRET) {
+    return res.status(503).send('Stripe webhook is not configured');
+  }
+
+  const signature = req.headers['stripe-signature'];
+  if (!signature) {
+    return res.status(400).send('Missing Stripe signature');
+  }
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, signature, STRIPE_WEBHOOK_SECRET);
+  } catch (error) {
+    return res.status(400).send(`Webhook signature verification failed: ${error.message}`);
+  }
+
+  try {
+    await handleStripeWebhookEvent(event);
+    return res.json({ received: true });
+  } catch (error) {
+    console.error('Stripe webhook processing failed:', error);
+    return res.status(500).send('Webhook processing failed');
+  }
+});
+
 app.use(express.json());
 
 const defaultSettings = {
@@ -100,12 +133,18 @@ const billingPlans = {
   }
 };
 
+const stripePriceIds = {
+  monthly: process.env.STRIPE_PRICE_MONTHLY || '',
+  yearly: process.env.STRIPE_PRICE_YEARLY || '',
+  lifetime: process.env.STRIPE_PRICE_LIFETIME || ''
+};
+
 const billingProviders = {
   card: {
     code: 'card',
     provider: 'STRIPE',
     label: 'Visa / Mastercard',
-    configured: Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_MONTHLY)
+    configured: Boolean(stripe && stripePriceIds.monthly && stripePriceIds.yearly && stripePriceIds.lifetime)
   },
   uzcard: {
     code: 'uzcard',
@@ -324,6 +363,414 @@ const serializeBillingStatus = (user) => ({
   premiumUntil: user?.premiumUntil || null,
   billingPlan: user?.billingPlan || 'FREE'
 });
+
+const getStripeModeForPlan = (planCode) => (planCode === 'lifetime' ? 'payment' : 'subscription');
+
+const getPremiumUntilForPlan = (planCode) => {
+  if (planCode === 'monthly') return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  if (planCode === 'yearly') return new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+  return new Date('2099-12-31T23:59:59.000Z');
+};
+
+const getPlanByPriceId = (priceId) =>
+  Object.values(billingPlans).find((plan) => stripePriceIds[plan.code] && stripePriceIds[plan.code] === priceId) || null;
+
+const getPlanFromStripeObjects = ({ priceId, metadata = {} }) =>
+  getPlanByPriceId(priceId) || billingPlans[String(metadata.planCode || '')] || null;
+
+const getUserIdFromStripeMetadata = (metadata = {}) => String(metadata.userId || '').trim();
+
+const getCurrentPeriodDates = (subscription) => {
+  const startSeconds = Number(subscription?.current_period_start || 0);
+  const endSeconds = Number(subscription?.current_period_end || 0);
+  return {
+    currentPeriodStart: startSeconds ? new Date(startSeconds * 1000) : null,
+    currentPeriodEnd: endSeconds ? new Date(endSeconds * 1000) : null
+  };
+};
+
+const markTransactionStatus = async ({
+  providerPaymentId,
+  status,
+  checkoutUrl,
+  paymentUrl,
+  paidAt,
+  failedAt,
+  metadata
+}) => {
+  if (!providerPaymentId) return;
+
+  await prisma.paymentTransaction.updateMany({
+    where: {
+      provider: 'STRIPE',
+      providerPaymentId
+    },
+    data: {
+      status,
+      ...(checkoutUrl ? { checkoutUrl } : {}),
+      ...(paymentUrl ? { paymentUrl } : {}),
+      ...(paidAt ? { paidAt } : {}),
+      ...(failedAt ? { failedAt } : {}),
+      ...(metadata ? { metadata } : {})
+    }
+  });
+};
+
+const syncPremiumAccess = async ({
+  userId,
+  plan,
+  provider = 'STRIPE',
+  customerId = null,
+  subscriptionId = null,
+  priceId = null,
+  status = 'ACTIVE',
+  currentPeriodStart = null,
+  currentPeriodEnd = null,
+  metadata = null
+}) => {
+  if (!userId || !plan) return null;
+
+  const premiumUntil = currentPeriodEnd || getPremiumUntilForPlan(plan.code);
+  const nextUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      isPremium: true,
+      premiumUntil,
+      billingPlan: plan.plan,
+      ...(customerId ? { stripeCustomerId: customerId } : {})
+    }
+  });
+
+  await prisma.userProgress.upsert({
+    where: { userId },
+    update: { isPremium: true },
+    create: {
+      userId,
+      ...defaultProgress,
+      isPremium: true
+    }
+  });
+
+  if (subscriptionId || plan.code !== 'lifetime') {
+    const providerSubscriptionId = subscriptionId || `${userId}:${plan.code}`;
+    const existingSubscription = await prisma.billingSubscription.findFirst({
+      where: {
+        provider,
+        providerSubscriptionId
+      }
+    });
+
+    if (existingSubscription) {
+      await prisma.billingSubscription.update({
+        where: { id: existingSubscription.id },
+        data: {
+          plan: plan.plan,
+          status,
+          providerCustomerId: customerId,
+          providerPriceId: priceId,
+          currentPeriodStart,
+          currentPeriodEnd: premiumUntil,
+          cancelAtPeriodEnd: false,
+          metadata
+        }
+      });
+    } else {
+      await prisma.billingSubscription.create({
+        data: {
+          userId,
+          plan: plan.plan,
+          status,
+          provider,
+          providerCustomerId: customerId,
+          providerSubscriptionId,
+          providerPriceId: priceId,
+          currentPeriodStart,
+          currentPeriodEnd: premiumUntil,
+          metadata
+        }
+      });
+    }
+  }
+
+  return nextUser;
+};
+
+const revokePremiumAccess = async ({ subscriptionId, customerId, status = 'CANCELED' }) => {
+  const existingSubscription = subscriptionId
+    ? await prisma.billingSubscription.findFirst({
+      where: {
+        provider: 'STRIPE',
+        providerSubscriptionId: subscriptionId
+      }
+    })
+    : customerId
+      ? await prisma.billingSubscription.findFirst({
+        where: {
+          provider: 'STRIPE',
+          providerCustomerId: customerId
+        }
+      })
+      : null;
+
+  if (!existingSubscription) return;
+
+  await prisma.billingSubscription.update({
+    where: { id: existingSubscription.id },
+    data: {
+      status,
+      cancelAtPeriodEnd: status === 'CANCELED'
+    }
+  });
+
+  const activeSubscriptions = await prisma.billingSubscription.count({
+    where: {
+      userId: existingSubscription.userId,
+      status: {
+        in: ['ACTIVE', 'TRIALING', 'PAST_DUE']
+      }
+    }
+  });
+
+  if (activeSubscriptions === 0) {
+    await prisma.user.update({
+      where: { id: existingSubscription.userId },
+      data: {
+        isPremium: false,
+        premiumUntil: null,
+        billingPlan: 'FREE'
+      }
+    });
+
+    await prisma.userProgress.upsert({
+      where: { userId: existingSubscription.userId },
+      update: { isPremium: false },
+      create: {
+        userId: existingSubscription.userId,
+        ...defaultProgress,
+        isPremium: false
+      }
+    });
+  }
+};
+
+const findUserForStripeEvent = async ({ userId, customerId }) => {
+  if (userId) {
+    return prisma.user.findUnique({ where: { id: userId } });
+  }
+  if (customerId) {
+    return prisma.user.findUnique({ where: { stripeCustomerId: customerId } });
+  }
+  return null;
+};
+
+const ensureStripeCustomer = async (user) => {
+  if (!stripe) {
+    throw new Error('Stripe is not configured');
+  }
+
+  if (user.stripeCustomerId) {
+    return user.stripeCustomerId;
+  }
+
+  const customer = await stripe.customers.create({
+    email: user.email,
+    name: user.name,
+    metadata: {
+      userId: user.id
+    }
+  });
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      stripeCustomerId: customer.id
+    }
+  });
+
+  return customer.id;
+};
+
+const handleStripeCheckoutCompleted = async (session) => {
+  const userId = getUserIdFromStripeMetadata(session.metadata);
+  const customerId = String(session.customer || '');
+  const user = await findUserForStripeEvent({ userId, customerId });
+  if (!user) return;
+
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+  const firstItem = lineItems.data[0];
+  const priceId = firstItem?.price?.id || '';
+  const plan = getPlanFromStripeObjects({
+    priceId,
+    metadata: session.metadata
+  });
+
+  if (!plan) {
+    throw new Error(`Unable to resolve billing plan for Stripe session ${session.id}`);
+  }
+
+  await markTransactionStatus({
+    providerPaymentId: session.id,
+    status: 'SUCCEEDED',
+    checkoutUrl: session.url || null,
+    paymentUrl: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+    paidAt: new Date(),
+    metadata: session.metadata || null
+  });
+
+  if (session.mode === 'subscription' && typeof session.subscription === 'string') {
+    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+    const { currentPeriodStart, currentPeriodEnd } = getCurrentPeriodDates(subscription);
+    await syncPremiumAccess({
+      userId: user.id,
+      plan,
+      customerId,
+      subscriptionId: subscription.id,
+      priceId,
+      status: subscription.status === 'trialing' ? 'TRIALING' : 'ACTIVE',
+      currentPeriodStart,
+      currentPeriodEnd,
+      metadata: session.metadata || null
+    });
+    return;
+  }
+
+  await syncPremiumAccess({
+    userId: user.id,
+    plan,
+    customerId,
+    priceId,
+    status: 'ACTIVE',
+    currentPeriodStart: new Date(),
+    currentPeriodEnd: getPremiumUntilForPlan(plan.code),
+    metadata: session.metadata || null
+  });
+};
+
+const handleStripeInvoicePaid = async (invoice) => {
+  const customerId = String(invoice.customer || '');
+  const subscriptionId = String(invoice.subscription || '');
+  const priceId = invoice.lines?.data?.[0]?.price?.id || '';
+  const plan = getPlanFromStripeObjects({ priceId, metadata: invoice.metadata });
+  const user = await findUserForStripeEvent({
+    userId: getUserIdFromStripeMetadata(invoice.metadata),
+    customerId
+  });
+
+  if (!user || !plan) return;
+
+  const subscription = subscriptionId ? await stripe.subscriptions.retrieve(subscriptionId) : null;
+  const { currentPeriodStart, currentPeriodEnd } = getCurrentPeriodDates(subscription);
+  await syncPremiumAccess({
+    userId: user.id,
+    plan,
+    customerId,
+    subscriptionId,
+    priceId,
+    status: subscription?.status === 'trialing' ? 'TRIALING' : 'ACTIVE',
+    currentPeriodStart,
+    currentPeriodEnd,
+    metadata: invoice.metadata || null
+  });
+};
+
+const handleStripeInvoiceFailed = async (invoice) => {
+  const subscriptionId = String(invoice.subscription || '');
+  const paymentIntentId = String(invoice.payment_intent || '');
+
+  await markTransactionStatus({
+    providerPaymentId: paymentIntentId,
+    status: 'FAILED',
+    failedAt: new Date(),
+    metadata: invoice.metadata || null
+  });
+
+  if (!subscriptionId) return;
+
+  await prisma.billingSubscription.updateMany({
+    where: {
+      provider: 'STRIPE',
+      providerSubscriptionId: subscriptionId
+    },
+    data: {
+      status: 'PAST_DUE'
+    }
+  });
+};
+
+const handleStripeSubscriptionUpdated = async (subscription) => {
+  const customerId = String(subscription.customer || '');
+  const priceId = subscription.items?.data?.[0]?.price?.id || '';
+  const plan = getPlanFromStripeObjects({ priceId, metadata: subscription.metadata });
+  const user = await findUserForStripeEvent({
+    userId: getUserIdFromStripeMetadata(subscription.metadata),
+    customerId
+  });
+
+  if (!user || !plan) return;
+
+  const { currentPeriodStart, currentPeriodEnd } = getCurrentPeriodDates(subscription);
+  const subscriptionStatusMap = {
+    trialing: 'TRIALING',
+    active: 'ACTIVE',
+    past_due: 'PAST_DUE',
+    canceled: 'CANCELED',
+    unpaid: 'PAST_DUE'
+  };
+  const nextStatus = subscriptionStatusMap[subscription.status] || 'INACTIVE';
+
+  if (nextStatus === 'CANCELED' || nextStatus === 'INACTIVE') {
+    await revokePremiumAccess({
+      subscriptionId: subscription.id,
+      customerId,
+      status: nextStatus
+    });
+    return;
+  }
+
+  await syncPremiumAccess({
+    userId: user.id,
+    plan,
+    customerId,
+    subscriptionId: subscription.id,
+    priceId,
+    status: nextStatus,
+    currentPeriodStart,
+    currentPeriodEnd,
+    metadata: subscription.metadata || null
+  });
+
+  await prisma.billingSubscription.updateMany({
+    where: {
+      provider: 'STRIPE',
+      providerSubscriptionId: subscription.id
+    },
+    data: {
+      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end)
+    }
+  });
+};
+
+async function handleStripeWebhookEvent(event) {
+  if (!stripe) return;
+
+  switch (event.type) {
+    case 'checkout.session.completed':
+      await handleStripeCheckoutCompleted(event.data.object);
+      break;
+    case 'invoice.paid':
+      await handleStripeInvoicePaid(event.data.object);
+      break;
+    case 'invoice.payment_failed':
+      await handleStripeInvoiceFailed(event.data.object);
+      break;
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted':
+      await handleStripeSubscriptionUpdated(event.data.object);
+      break;
+    default:
+      break;
+  }
+}
 
 const ensureUserState = async (userId) => {
   await prisma.timerSettings.upsert({
@@ -737,11 +1184,99 @@ app.post('/api/billing/checkout', requireAuth, async (req, res) => {
     });
   }
 
+  if (method.provider !== 'STRIPE' || !stripe) {
+    return res.status(400).json({ message: 'Selected payment provider is not available yet' });
+  }
+
+  const priceId = stripePriceIds[plan.code];
+  if (!priceId) {
+    return res.status(500).json({ message: `Stripe price is missing for ${plan.label}` });
+  }
+
+  const customerId = await ensureStripeCustomer(req.user);
+  const mode = getStripeModeForPlan(plan.code);
+  const session = await stripe.checkout.sessions.create({
+    mode,
+    customer: customerId,
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1
+      }
+    ],
+    allow_promotion_codes: true,
+    success_url: STRIPE_SUCCESS_URL,
+    cancel_url: STRIPE_CANCEL_URL,
+    metadata: {
+      userId: req.user.id,
+      planCode: plan.code,
+      subscriptionPlan: plan.plan
+    }
+  });
+
+  await prisma.paymentTransaction.create({
+    data: {
+      userId: req.user.id,
+      provider: 'STRIPE',
+      status: 'PENDING',
+      plan: plan.plan,
+      amount: plan.amount,
+      currency: plan.currency,
+      providerPaymentId: session.id,
+      checkoutUrl: session.url || null,
+      paymentUrl: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+      metadata: {
+        mode,
+        planCode: plan.code
+      }
+    }
+  });
+
   return res.status(200).json({
     ok: true,
-    mode: 'redirect',
+    mode,
     provider: method.provider,
-    checkoutUrl: `${APP_URL}/billing/redirect?plan=${plan.code}&provider=${method.provider.toLowerCase()}`
+    sessionId: session.id,
+    checkoutUrl: session.url
+  });
+});
+
+app.post('/api/billing/confirm-session', requireAuth, async (req, res) => {
+  const sessionId = String(req.body?.sessionId || '').trim();
+
+  if (!sessionId) {
+    return res.status(400).json({ message: 'Stripe session ID is required' });
+  }
+
+  if (!stripe) {
+    return res.status(503).json({ message: 'Stripe is not configured' });
+  }
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+  if (!session || session.customer == null) {
+    return res.status(404).json({ message: 'Stripe session not found' });
+  }
+
+  const sessionUserId = getUserIdFromStripeMetadata(session.metadata);
+  if (sessionUserId && sessionUserId !== req.user.id) {
+    return res.status(403).json({ message: 'This checkout session does not belong to the current user' });
+  }
+
+  if (session.payment_status !== 'paid' && session.status !== 'complete') {
+    return res.json({
+      ok: false,
+      status: session.status,
+      paymentStatus: session.payment_status
+    });
+  }
+
+  await handleStripeCheckoutCompleted(session);
+  const freshUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+  return res.json({
+    ok: true,
+    billing: serializeBillingStatus(freshUser)
   });
 });
 
@@ -766,7 +1301,9 @@ app.post('/api/billing/dev/activate', requireAuth, async (req, res) => {
   const user = await prisma.user.update({
     where: { id: req.user.id },
     data: {
-      isPremium: true
+      isPremium: true,
+      premiumUntil,
+      billingPlan: plan.plan
     }
   });
 
