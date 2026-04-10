@@ -1,10 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Scrollbar */
+:root {
+  color-scheme: dark;
+  --bg-0: #07111f;
+  --bg-1: #0c1728;
+  --bg-2: #142033;
+  --panel: rgba(10, 16, 28, 0.72);
+  --panel-strong: rgba(12, 20, 34, 0.88);
+  --border-soft: rgba(255, 255, 255, 0.08);
+  --text-main: #f5f7fb;
+  --text-muted: rgba(229, 234, 245, 0.68);
+  --accent: #fb7185;
+  --accent-soft: rgba(251, 113, 133, 0.18);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(251, 113, 133, 0.14), transparent 34%),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 30%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 48%, #08111c 100%);
+  color: var(--text-main);
+  font-family: 'Manrope', sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+::selection {
+  background: rgba(251, 113, 133, 0.28);
+  color: white;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.8);
+  outline-offset: 2px;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -12,29 +75,25 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
 }
 
-body {
-  background-color: #0f172a;
-}
-
-/* Animations */
 @keyframes breathe {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
   }
   50% {
-    transform: scale(1.02);
-    opacity: 0.9;
-    text-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+    transform: scale(1.018);
+    opacity: 0.96;
+    text-shadow: 0 0 40px rgba(255, 255, 255, 0.16);
   }
 }
 
@@ -43,10 +102,18 @@ body {
 }
 
 @keyframes float {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(24px, -40px) scale(1.08);
+  }
+  66% {
+    transform: translate(-18px, 18px) scale(0.94);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
 }
 
 .animate-float-slow {
@@ -58,16 +125,40 @@ body {
 }
 
 .animate-float-fast {
-  animation: float 10s ease-in-out infinite;
+  animation: float 11s ease-in-out infinite;
 }
 
-/* Glassmorphism Utilities */
 .glass-panel {
-  @apply bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl;
+  @apply border shadow-2xl backdrop-blur-2xl;
+  background: linear-gradient(180deg, rgba(15, 23, 40, 0.78) 0%, rgba(8, 14, 24, 0.88) 100%);
+  border-color: var(--border-soft);
+  box-shadow:
+    0 18px 50px rgba(2, 6, 23, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .glass-input {
-  @apply bg-black/20 border border-white/5 focus:border-white/20 focus:bg-black/30 transition-all duration-300;
+  @apply transition-all duration-300;
+  background: rgba(2, 6, 23, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-input:focus {
+  background: rgba(2, 6, 23, 0.45);
+  border-color: rgba(125, 211, 252, 0.35);
+}
+
+.surface-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.badge-chip {
+  @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 @keyframes celebration-fall {
@@ -97,8 +188,9 @@ body {
 }
 
 @keyframes reward-bob {
-  0%, 100% {
-    transform: translateY(0px) scale(1);
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
   }
   50% {
     transform: translateY(-6px) scale(1.02);
@@ -195,10 +287,7 @@ body {
 .celebration-badge-aura {
   background: linear-gradient(145deg, rgba(111, 59, 130, 0.58), rgba(59, 37, 84, 0.58));
   border-color: rgba(244, 114, 182, 0.5);
-  box-shadow:
-    0 0 35px rgba(244, 114, 182, 0.28),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 0 24px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 35px rgba(244, 114, 182, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 0 24px rgba(255, 255, 255, 0.08);
 }
 
 .celebration-badge-aura .celebration-badge-layer {
@@ -230,6 +319,7 @@ body {
   border-color: rgba(251, 146, 60, 0.55);
   box-shadow: 0 0 35px rgba(249, 115, 22, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.12);
 }
+
 .celebration-badge-flare-core {
   background: linear-gradient(160deg, rgba(251, 146, 60, 0.4), rgba(239, 68, 68, 0.24));
   border-color: rgba(251, 146, 60, 0.5);
@@ -240,6 +330,7 @@ body {
   border-color: rgba(96, 165, 250, 0.55);
   box-shadow: 0 0 35px rgba(59, 130, 246, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.12);
 }
+
 .celebration-badge-nova-core {
   background: linear-gradient(160deg, rgba(96, 165, 250, 0.42), rgba(59, 130, 246, 0.25));
   border-color: rgba(147, 197, 253, 0.48);
@@ -250,6 +341,7 @@ body {
   border-color: rgba(45, 212, 191, 0.52);
   box-shadow: 0 0 35px rgba(45, 212, 191, 0.25), inset 0 0 25px rgba(255, 255, 255, 0.11);
 }
+
 .celebration-badge-zen-core {
   background: linear-gradient(160deg, rgba(45, 212, 191, 0.38), rgba(20, 184, 166, 0.2));
   border-color: rgba(94, 234, 212, 0.46);
@@ -260,6 +352,7 @@ body {
   border-color: rgba(129, 140, 248, 0.52);
   box-shadow: 0 0 35px rgba(79, 70, 229, 0.26), inset 0 0 25px rgba(255, 255, 255, 0.11);
 }
+
 .celebration-badge-focus-core {
   background: linear-gradient(160deg, rgba(129, 140, 248, 0.38), rgba(79, 70, 229, 0.22));
   border-color: rgba(165, 180, 252, 0.46);
@@ -270,6 +363,7 @@ body {
   border-color: rgba(56, 189, 248, 0.55);
   box-shadow: 0 0 35px rgba(56, 189, 248, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.11);
 }
+
 .celebration-badge-storm-core {
   background: linear-gradient(160deg, rgba(56, 189, 248, 0.42), rgba(14, 165, 233, 0.24));
   border-color: rgba(125, 211, 252, 0.48);
@@ -280,6 +374,7 @@ body {
   border-color: rgba(74, 222, 128, 0.55);
   box-shadow: 0 0 35px rgba(74, 222, 128, 0.26), inset 0 0 25px rgba(255, 255, 255, 0.11);
 }
+
 .celebration-badge-forest-core {
   background: linear-gradient(160deg, rgba(74, 222, 128, 0.4), rgba(34, 197, 94, 0.22));
   border-color: rgba(134, 239, 172, 0.46);
@@ -290,6 +385,7 @@ body {
   border-color: rgba(250, 204, 21, 0.58);
   box-shadow: 0 0 35px rgba(250, 204, 21, 0.3), inset 0 0 25px rgba(255, 255, 255, 0.12);
 }
+
 .celebration-badge-lumen-core {
   background: linear-gradient(160deg, rgba(250, 204, 21, 0.42), rgba(245, 158, 11, 0.24));
   border-color: rgba(253, 224, 71, 0.5);
@@ -300,6 +396,7 @@ body {
   border-color: rgba(244, 114, 182, 0.56);
   box-shadow: 0 0 35px rgba(236, 72, 153, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.11);
 }
+
 .celebration-badge-pulse-core {
   background: linear-gradient(160deg, rgba(244, 114, 182, 0.4), rgba(219, 39, 119, 0.23));
   border-color: rgba(249, 168, 212, 0.46);
@@ -310,6 +407,7 @@ body {
   border-color: rgba(196, 181, 253, 0.56);
   box-shadow: 0 0 35px rgba(168, 85, 247, 0.28), inset 0 0 25px rgba(255, 255, 255, 0.11);
 }
+
 .celebration-badge-crown-core {
   background: linear-gradient(160deg, rgba(196, 181, 253, 0.4), rgba(147, 51, 234, 0.22));
   border-color: rgba(221, 214, 254, 0.48);
@@ -327,25 +425,6 @@ body {
   animation: reward-shine 2.6s ease-in-out infinite;
 }
 
-.celebration-badge-dot {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(253, 224, 71, 0.9);
-  box-shadow: 0 0 12px rgba(253, 224, 71, 0.8);
-}
-
-.celebration-badge-dot-a {
-  top: 14px;
-  right: 12px;
-}
-
-.celebration-badge-dot-b {
-  bottom: 14px;
-  left: 12px;
-}
-
 .reward-cube {
   position: relative;
   overflow: hidden;
@@ -356,31 +435,6 @@ body {
     inset 0 -10px 18px rgba(0, 0, 0, 0.22),
     0 10px 18px rgba(0, 0, 0, 0.28),
     0 0 14px rgba(245, 158, 11, 0.2);
-  transform: none;
-}
-
-.reward-glyph {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 900;
-  line-height: 1;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-}
-
-.celebration-glyph {
-  position: relative;
-  z-index: 2;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 900;
-  font-size: 12px;
-  color: #fff8dc;
-  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
 }
 
 .reward-cube::after {
@@ -412,11 +466,6 @@ body {
   stroke-width: 2.4px;
 }
 
-.reward-cube-static::after {
-  animation: none;
-  opacity: 0.18;
-}
-
 .reward-cube-badge {
   background: linear-gradient(145deg, rgba(251, 191, 36, 0.34), rgba(245, 158, 11, 0.18));
   border-color: rgba(252, 211, 77, 0.55);
@@ -425,10 +474,7 @@ body {
 .reward-cube-aura {
   background: linear-gradient(145deg, rgba(111, 59, 130, 0.58), rgba(59, 37, 84, 0.58));
   border-color: rgba(244, 114, 182, 0.48);
-  box-shadow:
-    0 0 16px rgba(244, 114, 182, 0.25),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    inset 0 0 24px rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 16px rgba(244, 114, 182, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 0 24px rgba(255, 255, 255, 0.06);
 }
 
 .reward-cube-theme {
@@ -489,4 +535,15 @@ body {
   background: linear-gradient(145deg, rgba(168, 85, 247, 0.4), rgba(147, 51, 234, 0.2));
   border-color: rgba(196, 181, 253, 0.58);
   box-shadow: 0 0 16px rgba(168, 85, 247, 0.25), inset 0 0 16px rgba(255, 255, 255, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

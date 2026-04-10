@@ -1,10 +1,10 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { Sparkles, Brain, Music, ArrowRight, CheckCircle2, Zap, Layout, HelpCircle } from 'lucide-vue-next';
+import { Sparkles, Brain, Music, ArrowRight, CheckCircle2, Zap, Layout, HelpCircle, Loader2, TimerReset, BarChart3, ListChecks } from 'lucide-vue-next';
 import { useLanguage } from '../context/language';
 import LanguageSelector from './LanguageSelector.vue';
 import LegalModal from './LegalModal.vue';
-import { authService } from '../services/api';
+import { authService, getFriendlyRequestError } from '../services/api';
 
 const emit = defineEmits(['get-started', 'login', 'google-login']);
 
@@ -21,17 +21,23 @@ const isLegalOpen = ref(false);
 const currentYear = new Date().getFullYear();
 
 const legalLinks = computed(() => [
-  { id: 'privacy', label: language.value === 'ru' ? 'Конфиденциальность' : language.value === 'en' ? 'Privacy' : 'Maxfiylik' },
-  { id: 'terms', label: language.value === 'ru' ? 'Условия' : language.value === 'en' ? 'Terms' : 'Shartlar' },
-  { id: 'refund', label: language.value === 'ru' ? 'Возврат' : language.value === 'en' ? 'Refund' : 'Refund' },
-  { id: 'contact', label: language.value === 'ru' ? 'Контакты' : language.value === 'en' ? 'Contact' : 'Aloqa' }
+  { id: 'privacy', label: language.value === 'ru' ? 'Конфиденциальность' : language.value === 'uz' ? 'Maxfiylik' : 'Privacy' },
+  { id: 'terms', label: language.value === 'ru' ? 'Условия' : language.value === 'uz' ? 'Shartlar' : 'Terms' },
+  { id: 'refund', label: language.value === 'ru' ? 'Возврат' : language.value === 'uz' ? 'Qaytarish' : 'Refund' },
+  { id: 'contact', label: language.value === 'ru' ? 'Контакты' : language.value === 'uz' ? 'Aloqa' : 'Contact' }
 ]);
 
-const steps = [
-  { icon: Brain, title: t('landing.how.step1'), desc: t('landing.how.step1_desc'), color: 'text-rose-400', bg: 'bg-rose-500/10' },
-  { icon: Music, title: t('landing.how.step2'), desc: t('landing.how.step2_desc'), color: 'text-teal-400', bg: 'bg-teal-500/10' },
-  { icon: Zap, title: t('landing.how.step3'), desc: t('landing.how.step3_desc'), color: 'text-amber-400', bg: 'bg-amber-500/10' },
-];
+const steps = computed(() => [
+  { icon: ListChecks, title: t('landing.how.step1'), desc: t('landing.how.step1_desc'), color: 'text-rose-300', bg: 'bg-rose-500/10' },
+  { icon: Music, title: t('landing.how.step2'), desc: t('landing.how.step2_desc'), color: 'text-cyan-300', bg: 'bg-cyan-500/10' },
+  { icon: TimerReset, title: t('landing.how.step3'), desc: t('landing.how.step3_desc'), color: 'text-emerald-300', bg: 'bg-emerald-500/10' }
+]);
+
+const features = computed(() => [
+  { icon: Brain, title: t('landing.feature.focus'), desc: t('landing.feature.focus_desc') },
+  { icon: Music, title: t('landing.feature.atmos'), desc: t('landing.feature.atmos_desc') },
+  { icon: BarChart3, title: t('landing.feature.ai'), desc: t('landing.feature.ai_desc') }
+]);
 
 const handleGoogleLogin = async (response) => {
   if (!response?.credential) return;
@@ -41,7 +47,7 @@ const handleGoogleLogin = async (response) => {
     const user = await authService.loginWithGoogle(response.credential);
     emit('google-login', user);
   } catch (error) {
-    googleError.value = error?.response?.data?.message || error?.message || 'Google kirishda xatolik yuz berdi';
+    googleError.value = getFriendlyRequestError(error, language.value);
   } finally {
     isGoogleLoading.value = false;
   }
@@ -64,7 +70,7 @@ const renderGoogleButton = async () => {
     theme: 'outline',
     size: 'large',
     shape: 'pill',
-    width: 300,
+    width: 320,
     text: 'signin_with',
     locale: 'en',
     logo_alignment: 'left'
@@ -120,170 +126,248 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0f172a] text-white overflow-x-hidden font-sans">
+  <div class="min-h-screen overflow-x-hidden text-white">
     <LegalModal :is-open="isLegalOpen" :section="legalSection" @close="isLegalOpen = false" />
+
     <div class="fixed inset-0 z-0 pointer-events-none">
-      <div class="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] rounded-full bg-rose-600/20 blur-[120px] animate-float-slow" />
-      <div class="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/20 blur-[120px] animate-float-medium" />
-      <div class="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/noise.png')]" />
+      <div class="absolute left-[-8%] top-[-10%] h-[34rem] w-[34rem] rounded-full bg-rose-500/14 blur-[140px] animate-float-slow" />
+      <div class="absolute right-[-8%] top-[12%] h-[28rem] w-[28rem] rounded-full bg-cyan-500/12 blur-[120px] animate-float-medium" />
+      <div class="absolute bottom-[-12%] left-[18%] h-[24rem] w-[24rem] rounded-full bg-emerald-500/10 blur-[120px] animate-float-fast" />
+      <div class="absolute inset-0 surface-grid opacity-[0.07]" />
     </div>
 
-    <nav class="fixed inset-x-0 top-0 z-50">
-      <div class="container mx-auto px-6 py-4">
-        <div class="flex items-center justify-between rounded-[28px] border border-white/10 bg-white/[0.04] px-5 py-3 backdrop-blur-md shadow-[0_12px_40px_rgba(15,23,42,0.14)]">
-          <div class="flex items-center gap-2">
-          <div class="w-10 h-10 bg-gradient-to-br from-rose-400 to-orange-400 rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/20">
-            <Sparkles class="text-white" :size="20" />
+    <nav class="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-6">
+      <div class="mx-auto flex max-w-7xl items-center justify-between rounded-[28px] border border-white/10 bg-[rgba(7,12,21,0.68)] px-4 py-3 shadow-[0_12px_40px_rgba(2,6,23,0.28)] backdrop-blur-2xl md:px-5">
+        <div class="flex items-center gap-3">
+          <div class="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-rose-400 to-orange-400 shadow-lg shadow-rose-500/20">
+            <Sparkles :size="20" />
           </div>
-          <span class="text-xl font-bold tracking-tight hidden sm:inline">{{ t('app.name') }}</span>
+          <div>
+            <span class="font-display text-lg font-bold">ZenFlow</span>
+            <p class="hidden text-xs text-white/40 md:block">{{ t('landing.badge') }}</p>
+          </div>
         </div>
 
-          <div class="flex items-center gap-3 md:gap-4">
-            <LanguageSelector />
-            <div class="h-6 w-[1px] bg-white/10 hidden md:block" />
-            <button @click="emit('login')" class="text-white/70 hover:text-white font-medium text-sm transition-colors hidden md:block">
-              {{ t('login') }}
-            </button>
-            <button @click="emit('get-started')" class="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 whitespace-nowrap">
-              {{ t('auth.register') }}
-            </button>
-          </div>
+        <div class="flex items-center gap-3">
+          <LanguageSelector />
+          <button @click="emit('login')" class="hidden text-sm font-semibold text-white/70 transition-colors hover:text-white md:block">
+            {{ t('login') }}
+          </button>
+          <button @click="emit('get-started')" class="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-white/18 active:scale-[0.98]">
+            {{ t('auth.register') }}
+          </button>
         </div>
       </div>
     </nav>
 
-    <div class="relative z-10 container mx-auto px-6 pt-24 pb-20 md:pt-28 md:pb-32 text-center">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <span class="relative flex h-2 w-2">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-        </span>
-        ZenFlow Focus Workspace
-      </div>
-
-      <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8 md:mb-10 leading-tight animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
-        {{ t('landing.hero_title') }}
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-orange-400 to-amber-400">
-          {{ ` ${t('landing.hero_subtitle')}` }}
-        </span>
-      </h1>
-
-      <p class="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-14 md:mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-        {{ t('landing.desc') }}
-      </p>
-
-      <div class="flex flex-col items-center justify-center gap-7 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
-        <button @click="emit('get-started')" class="w-full max-w-[300px] px-8 py-4 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white text-base md:text-lg font-bold rounded-[22px] shadow-xl shadow-rose-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
-          {{ t('start') }}
-          <ArrowRight :size="22" />
-        </button>
-      </div>
-
-        <div class="mt-10 md:mt-12 flex flex-col items-center animate-in fade-in slide-in-from-bottom-10 duration-700 delay-400">
-          <div v-if="canUseGoogleLogin" class="google-button-frame">
-            <div ref="googleMountRef" class="google-button-shell flex justify-center min-h-[44px]"></div>
+    <main class="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28 md:px-6 md:pb-24 md:pt-32">
+      <section class="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
+        <div>
+          <div class="badge-chip text-rose-100/90">
+            <span class="inline-flex h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_14px_rgba(251,113,133,0.8)]" />
+            {{ t('landing.badge') }}
           </div>
-          <button
-            v-else
-            type="button"
-            class="flex items-center justify-center gap-3 rounded-full border border-white/20 bg-white px-6 py-3 text-slate-900 font-semibold opacity-80 cursor-not-allowed shadow-[0_16px_40px_rgba(15,23,42,0.18)]"
-            disabled
-          >
-            <span class="grid h-7 w-7 place-items-center rounded-full bg-slate-100 text-base font-bold text-[#4285F4]">G</span>
-            <span>Sign in with Google</span>
-          </button>
-          <p v-if="googleError" class="mt-3 text-sm text-rose-300">{{ googleError }}</p>
-          <p v-else-if="isGoogleLoading" class="mt-3 text-xs text-white/45">
-            Google kirish tekshirilmoqda...
+
+          <h1 class="mt-6 max-w-4xl font-display text-4xl font-bold leading-[0.95] tracking-[-0.05em] md:text-6xl lg:text-7xl">
+            {{ t('landing.hero_title') }}
+            <span class="bg-gradient-to-r from-rose-300 via-orange-300 to-amber-200 bg-clip-text text-transparent">
+              {{ ` ${t('landing.hero_subtitle')}` }}
+            </span>
+          </h1>
+
+          <p class="mt-6 max-w-2xl text-base leading-7 text-white/60 md:text-lg">
+            {{ t('landing.desc') }}
           </p>
-        </div>
-    </div>
 
-    <div class="relative z-10 container mx-auto px-6 py-20 border-t border-white/5">
-      <h2 class="text-3xl font-bold text-center mb-16">{{ t('landing.how.title') }}</h2>
-      <div class="grid md:grid-cols-3 gap-8">
-        <div v-for="(step, i) in steps" :key="i" class="flex flex-col items-center text-center p-6 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-          <div :class="`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${step.bg} ${step.color}`">
-            <component :is="step.icon" :size="32" />
+          <div class="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <button @click="emit('get-started')" class="inline-flex items-center justify-center gap-2 rounded-[1.4rem] bg-gradient-to-r from-rose-500 to-orange-500 px-6 py-4 text-base font-bold text-white shadow-xl shadow-rose-500/25 transition-transform hover:scale-[1.01] active:scale-[0.98]">
+              {{ t('start') }}
+              <ArrowRight :size="20" />
+            </button>
+
+            <div v-if="canUseGoogleLogin" class="google-button-frame">
+              <div ref="googleMountRef" class="google-button-shell flex min-h-[44px] justify-center"></div>
+            </div>
+            <button
+              v-else
+              type="button"
+              class="flex items-center justify-center gap-3 rounded-full border border-white/20 bg-white px-6 py-3 font-semibold text-slate-900 opacity-80 cursor-not-allowed shadow-[0_16px_40px_rgba(15,23,42,0.18)]"
+              disabled
+            >
+              <span class="grid h-7 w-7 place-items-center rounded-full bg-slate-100 text-base font-bold text-[#4285F4]">G</span>
+              <span>Sign in with Google</span>
+            </button>
           </div>
-          <h3 class="text-xl font-bold mb-2">{{ step.title }}</h3>
-          <p class="text-white/50">{{ step.desc }}</p>
-        </div>
-      </div>
-    </div>
 
-    <div class="relative z-10 container mx-auto px-6 py-20 border-t border-white/5 bg-black/20">
-      <h2 class="text-3xl font-bold text-center mb-4">{{ t('landing.pricing.title') }}</h2>
-      <p class="text-white/40 text-center mb-16 max-w-xl mx-auto">
-        {{ language === 'ru' ? 'Запускайтесь бесплатно, масштабируйтесь на PRO.' : language === 'en' ? 'Start free, scale with PRO.' : 'Bepul boshlang, PRO bilan kengaying.' }}
-      </p>
-
-      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        <div class="p-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col">
-          <h3 class="text-xl font-bold text-white mb-2">{{ t('landing.pricing.free') }}</h3>
-          <div class="text-4xl font-bold text-white mb-6">$0</div>
-          <ul class="space-y-4 mb-8 flex-1">
-            <li class="flex items-center gap-3 text-white/70"><CheckCircle2 :size="18" class="text-white/30" /> {{ t('landing.pricing.feature.sounds') }}</li>
-            <li class="flex items-center gap-3 text-white/70"><CheckCircle2 :size="18" class="text-white/30" /> {{ t('landing.pricing.feature.stats') }}</li>
-            <li class="flex items-center gap-3 text-white/70"><CheckCircle2 :size="18" class="text-white/30" /> {{ t('landing.pricing.feature.ai') }}</li>
-            <li class="flex items-center gap-3 text-white/70"><CheckCircle2 :size="18" class="text-white/30" /> {{ t('landing.pricing.feature.theme') }}</li>
-          </ul>
-          <button @click="emit('get-started')" class="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all">
-            {{ t('start') }}
-          </button>
-        </div>
-
-        <div class="p-8 rounded-3xl bg-gradient-to-b from-rose-900/40 to-black/40 border border-rose-500/30 flex flex-col relative overflow-hidden">
-          <div class="absolute top-0 right-0 bg-rose-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>
-          <h3 class="text-xl font-bold text-white mb-2">{{ t('landing.pricing.pro') }}</h3>
-          <div class="flex items-baseline gap-1 mb-6">
-            <span class="text-4xl font-bold text-white">$4.99</span>
-            <span class="text-sm text-white/50">/ {{ t('landing.pricing.month') }}</span>
+          <div
+            v-if="isGoogleLoading"
+            class="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/60"
+          >
+            <Loader2 :size="14" class="animate-spin" />
+            <span>
+              {{
+                language === 'ru'
+                  ? 'Проверяем вход через Google...'
+                  : language === 'uz'
+                    ? 'Google kirish tekshirilmoqda...'
+                    : 'Checking Google sign-in...'
+              }}
+            </span>
           </div>
-          <ul class="space-y-4 mb-8 flex-1">
-            <li class="flex items-center gap-3 text-white"><CheckCircle2 :size="18" class="text-rose-400" /> {{ t('landing.pricing.feature.sounds_pro') }}</li>
-            <li class="flex items-center gap-3 text-white"><CheckCircle2 :size="18" class="text-rose-400" /> {{ t('landing.pricing.feature.stats_pro') }}</li>
-            <li class="flex items-center gap-3 text-white"><CheckCircle2 :size="18" class="text-rose-400" /> {{ t('landing.pricing.feature.ai_pro') }}</li>
-            <li class="flex items-center gap-3 text-white"><CheckCircle2 :size="18" class="text-rose-400" /> {{ t('landing.pricing.feature.theme_pro') }}</li>
-          </ul>
-          <button @click="emit('get-started')" class="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold shadow-lg shadow-rose-500/25 hover:scale-105 transition-all">
-            {{ t('premium.go') }}
-          </button>
-        </div>
-      </div>
-    </div>
+          <p v-else-if="googleError" class="mt-3 text-sm text-rose-300">{{ googleError }}</p>
 
-    <div class="relative z-10 container mx-auto px-6 py-20 border-t border-white/5">
-      <h2 class="text-3xl font-bold text-center mb-16">{{ t('landing.faq.title') }}</h2>
-      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        <div class="p-6 rounded-2xl bg-white/5">
-          <h4 class="font-bold text-lg mb-2 flex items-center gap-2"><HelpCircle :size="18" class="text-white/40" /> {{ t('landing.faq.q1') }}</h4>
-          <p class="text-white/60 text-sm leading-relaxed">{{ t('landing.faq.a1') }}</p>
+          <div class="mt-10 grid gap-3 sm:grid-cols-3">
+            <div v-for="feature in features" :key="feature.title" class="rounded-[1.6rem] border border-white/8 bg-white/[0.04] p-4">
+              <div class="mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-white/6 text-white/80">
+                <component :is="feature.icon" :size="18" />
+              </div>
+              <h3 class="text-base font-semibold text-white">{{ feature.title }}</h3>
+              <p class="mt-2 text-sm leading-6 text-white/50">{{ feature.desc }}</p>
+            </div>
+          </div>
         </div>
-        <div class="p-6 rounded-2xl bg-white/5">
-          <h4 class="font-bold text-lg mb-2 flex items-center gap-2"><Layout :size="18" class="text-white/40" /> {{ t('landing.faq.q2') }}</h4>
-          <p class="text-white/60 text-sm leading-relaxed">{{ t('landing.faq.a2') }}</p>
-        </div>
-      </div>
-    </div>
 
-    <div class="border-t border-white/5 bg-black/40 py-12">
-      <div class="container mx-auto px-6 text-center">
-        <p class="text-white/40 text-sm mb-6 uppercase tracking-wider">{{ t('landing.footer') }}</p>
-        <div class="flex flex-wrap justify-center gap-3 md:gap-4 mb-8">
+        <div class="relative">
+          <div class="glass-panel rounded-[2rem] p-5 md:p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs uppercase tracking-[0.24em] text-cyan-200/70">ZenFlow Workspace</p>
+                <h3 class="mt-2 font-display text-2xl font-bold">A calmer daily system</h3>
+              </div>
+              <div class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                Live layout
+              </div>
+            </div>
+
+            <div class="mt-5 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+              <div class="rounded-[1.6rem] border border-white/8 bg-black/25 p-4">
+                <div class="flex items-center justify-between">
+                  <p class="text-sm font-semibold text-white/75">{{ t('timer.focus') }}</p>
+                  <span class="rounded-full bg-rose-500/12 px-2 py-1 text-[11px] font-semibold text-rose-100">25 {{ t('timer.minutes') }}</span>
+                </div>
+                <div class="mt-5 flex items-center justify-center">
+                  <div class="grid h-48 w-48 place-items-center rounded-full border border-white/10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_65%)]">
+                    <div class="text-center">
+                      <div class="font-display text-5xl font-bold tracking-[-0.08em]">24:18</div>
+                      <p class="mt-2 text-xs uppercase tracking-[0.3em] text-rose-200/80">{{ t('timer.running') }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div class="rounded-[1.6rem] border border-white/8 bg-black/25 p-4">
+                  <p class="text-xs uppercase tracking-[0.24em] text-white/35">{{ t('tasks.title') }}</p>
+                  <div class="mt-4 space-y-3">
+                    <div class="rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-3 text-sm text-white/80">Landing revamp</div>
+                    <div class="rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-3 text-sm text-white/80">Deep work block</div>
+                    <div class="rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-3 text-sm text-white/80">Review progress</div>
+                  </div>
+                </div>
+
+                <div class="rounded-[1.6rem] border border-white/8 bg-black/25 p-4">
+                  <p class="text-xs uppercase tracking-[0.24em] text-white/35">{{ t('stats.weekly') }}</p>
+                  <div class="mt-4 grid grid-cols-7 items-end gap-2">
+                    <div v-for="height in [28, 44, 52, 38, 64, 78, 58]" :key="height" class="rounded-t-xl bg-gradient-to-t from-cyan-400 to-emerald-300" :style="{ height: `${height}px` }"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-16 rounded-[2.25rem] border border-white/8 bg-white/[0.03] px-5 py-8 md:px-8 md:py-10">
+        <h2 class="font-display text-3xl font-bold text-center">{{ t('landing.how.title') }}</h2>
+        <div class="mt-8 grid gap-4 md:grid-cols-3">
+          <div v-for="step in steps" :key="step.title" class="rounded-[1.6rem] border border-white/8 bg-black/20 p-5">
+            <div :class="`grid h-14 w-14 place-items-center rounded-2xl ${step.bg} ${step.color}`">
+              <component :is="step.icon" :size="24" />
+            </div>
+            <h3 class="mt-5 text-xl font-semibold text-white">{{ step.title }}</h3>
+            <p class="mt-3 text-sm leading-6 text-white/55">{{ step.desc }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-16 grid gap-6 lg:grid-cols-2">
+        <div class="glass-panel rounded-[2rem] p-6">
+          <h2 class="font-display text-3xl font-bold">{{ t('landing.pricing.title') }}</h2>
+          <p class="mt-3 max-w-xl text-white/55">
+            {{ language === 'ru' ? 'Начните бесплатно и расширяйте систему по мере роста ритма.' : language === 'uz' ? 'Bepul boshlang va fokus ritmingiz kuchaygan sari kengaytiring.' : 'Start free and expand as your focus rhythm grows.' }}
+          </p>
+
+          <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div class="rounded-[1.6rem] border border-white/8 bg-black/20 p-5">
+              <p class="text-sm font-semibold text-white/70">{{ t('landing.pricing.free') }}</p>
+              <p class="mt-2 text-4xl font-display font-bold">$0</p>
+              <div class="mt-5 space-y-3 text-sm text-white/65">
+                <div class="flex items-center gap-2"><CheckCircle2 :size="16" class="text-white/30" /> {{ t('landing.pricing.feature.sounds') }}</div>
+                <div class="flex items-center gap-2"><CheckCircle2 :size="16" class="text-white/30" /> {{ t('landing.pricing.feature.stats') }}</div>
+                <div class="flex items-center gap-2"><CheckCircle2 :size="16" class="text-white/30" /> {{ t('landing.pricing.feature.ai') }}</div>
+                <div class="flex items-center gap-2"><CheckCircle2 :size="16" class="text-white/30" /> {{ t('landing.pricing.feature.theme') }}</div>
+              </div>
+              <button @click="emit('get-started')" class="mt-6 w-full rounded-xl border border-white/10 bg-white/10 py-3 font-semibold text-white transition-colors hover:bg-white/16">
+                {{ t('start') }}
+              </button>
+            </div>
+
+            <div class="rounded-[1.6rem] border border-rose-400/20 bg-gradient-to-b from-rose-500/12 to-orange-500/8 p-5">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-semibold text-white">{{ t('landing.pricing.pro') }}</p>
+                <span class="rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-bold text-white">POPULAR</span>
+              </div>
+              <p class="mt-2 text-4xl font-display font-bold">{{ t('premium.price') }}</p>
+              <p class="mt-2 text-sm text-rose-100/80">{{ t('premium.discount') }}</p>
+              <div class="mt-5 space-y-3 text-sm text-white/80">
+                <div class="flex items-center gap-2"><CheckCircle2 :size="16" class="text-rose-300" /> {{ t('landing.pricing.feature.sounds_pro') }}</div>
+                <div class="flex items-center gap-2"><CheckCircle2 :size="16" class="text-rose-300" /> {{ t('landing.pricing.feature.stats_pro') }}</div>
+                <div class="flex items-center gap-2"><CheckCircle2 :size="16" class="text-rose-300" /> {{ t('landing.pricing.feature.ai_pro') }}</div>
+                <div class="flex items-center gap-2"><CheckCircle2 :size="16" class="text-rose-300" /> {{ t('landing.pricing.feature.theme_pro') }}</div>
+              </div>
+              <button @click="emit('get-started')" class="mt-6 w-full rounded-xl bg-white py-3 font-bold text-slate-950 transition-transform hover:scale-[1.01]">
+                {{ t('premium.go') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-[2rem] p-6">
+          <h2 class="font-display text-3xl font-bold">{{ t('landing.faq.title') }}</h2>
+          <div class="mt-6 space-y-4">
+            <div class="rounded-[1.6rem] border border-white/8 bg-black/20 p-5">
+              <h4 class="flex items-center gap-2 text-lg font-semibold"><HelpCircle :size="18" class="text-white/40" /> {{ t('landing.faq.q1') }}</h4>
+              <p class="mt-3 text-sm leading-6 text-white/55">{{ t('landing.faq.a1') }}</p>
+            </div>
+            <div class="rounded-[1.6rem] border border-white/8 bg-black/20 p-5">
+              <h4 class="flex items-center gap-2 text-lg font-semibold"><Layout :size="18" class="text-white/40" /> {{ t('landing.faq.q2') }}</h4>
+              <p class="mt-3 text-sm leading-6 text-white/55">{{ t('landing.faq.a2') }}</p>
+            </div>
+            <div class="rounded-[1.6rem] border border-white/8 bg-black/20 p-5">
+              <h4 class="flex items-center gap-2 text-lg font-semibold"><Zap :size="18" class="text-white/40" /> {{ t('landing.footer') }}</h4>
+              <p class="mt-3 text-sm leading-6 text-white/55">{{ supportEmail }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="relative z-10 border-t border-white/6 bg-black/30 px-4 py-10 md:px-6">
+      <div class="mx-auto max-w-7xl">
+        <p class="text-sm uppercase tracking-[0.24em] text-white/30">{{ t('landing.footer') }}</p>
+        <div class="mt-5 flex flex-wrap gap-3">
           <button
             v-for="link in legalLinks"
             :key="link.id"
             @click="openLegal(link.id)"
-            class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-sm transition-all"
+            class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             {{ link.label }}
           </button>
         </div>
-        <p class="text-white/30 text-sm">{{ supportEmail }}</p>
-        <p class="mt-8 text-white/20 text-xs">� {{ currentYear }} ZenFlow. All rights reserved.</p>
+        <p class="mt-6 text-sm text-white/35">© {{ currentYear }} ZenFlow. All rights reserved.</p>
       </div>
-    </div>
+    </footer>
   </div>
 </template>
 
@@ -291,16 +375,12 @@ onBeforeUnmount(() => {
 .google-button-frame {
   display: inline-flex;
   border-radius: 999px;
-  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .google-button-frame:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
-}
-
-.google-button-frame:active {
-  transform: translateY(0) scale(0.985);
 }
 
 .google-button-shell :deep(div),
@@ -312,5 +392,3 @@ onBeforeUnmount(() => {
   filter: drop-shadow(0 12px 24px rgba(2, 6, 23, 0.18));
 }
 </style>
-
-

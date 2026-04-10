@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { X, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-vue-next';
 import { useLanguage } from '../context/language';
-import { authService } from '../services/api';
+import { authService, getFriendlyRequestError } from '../services/api';
 
 const props = defineProps({
   isOpen: Boolean
@@ -10,7 +10,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'login']);
 
-const { t } = useLanguage();
+const { t, language } = useLanguage();
 const mode = ref('login');
 const isLoading = ref(false);
 const errorMessage = ref('');
@@ -97,7 +97,7 @@ const handleSubmit = async () => {
     emit('close');
   } catch (error) {
     fieldErrors.value = error?.response?.data?.fieldErrors || {};
-    errorMessage.value = error?.response?.data?.message || error?.message || 'Xatolik yuz berdi';
+    errorMessage.value = getFriendlyRequestError(error, language.value);
   } finally {
     isLoading.value = false;
   }
@@ -112,7 +112,7 @@ const handleGoogleLogin = async (response) => {
     emit('login', user);
     emit('close');
   } catch (error) {
-    errorMessage.value = error?.response?.data?.message || error?.message || 'Google kirishda xatolik yuz berdi';
+    errorMessage.value = getFriendlyRequestError(error, language.value);
   } finally {
     isLoading.value = false;
   }
@@ -275,6 +275,15 @@ onBeforeUnmount(() => {
             </template>
           </button>
 
+          <p v-if="isLoading && !errorMessage" class="text-sm text-white/45 text-center">
+            {{
+              language === 'ru'
+                ? 'Проверяем вход...'
+                : language === 'en'
+                  ? 'Checking sign-in...'
+                  : 'Kirish tekshirilmoqda...'
+            }}
+          </p>
           <p v-if="errorMessage" class="text-sm text-rose-300 text-center">
             {{ errorMessage }}
           </p>
@@ -331,3 +340,4 @@ onBeforeUnmount(() => {
   filter: drop-shadow(0 12px 28px rgba(2, 6, 23, 0.25));
 }
 </style>
+

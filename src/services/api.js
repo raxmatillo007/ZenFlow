@@ -51,9 +51,9 @@ const requestMessages = {
     generic: 'Something went wrong. Please try again.'
   },
   ru: {
-    timeout: 'Сервер отвечает слишком долго. Подождите несколько секунд и попробуйте снова.',
-    network: 'Сервер временно недоступен или просыпается. Попробуйте еще раз через несколько секунд.',
-    generic: 'Произошла ошибка. Попробуйте снова.'
+    timeout: 'Сервер отвечает слишком долго. Подождите пару секунд и попробуйте снова.',
+    network: 'Сервер временно недоступен или еще запускается. Попробуйте снова чуть позже.',
+    generic: 'Что-то пошло не так. Попробуйте снова.'
   }
 };
 
@@ -84,11 +84,7 @@ export const getFriendlyRequestError = (error, language = 'uz') => {
   const locale = requestMessages[language] || requestMessages.uz;
   const rawMessage = String(error?.message || '').toLowerCase();
 
-  if (
-    error?.code === 'ECONNABORTED' ||
-    rawMessage.includes('timeout') ||
-    rawMessage.includes('sekin javob')
-  ) {
+  if (error?.code === 'ECONNABORTED' || rawMessage.includes('timeout') || rawMessage.includes('sekin javob')) {
     return locale.timeout;
   }
 
@@ -109,7 +105,13 @@ export const getFriendlyRequestError = (error, language = 'uz') => {
 
 export const getCurrentUser = () => {
   const raw = localStorage.getItem(CURRENT_USER_KEY);
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    clearCurrentUser();
+    return null;
+  }
 };
 
 api.interceptors.request.use((config) => {

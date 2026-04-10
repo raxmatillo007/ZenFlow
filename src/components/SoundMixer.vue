@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import {
   Volume2,
   CloudRain,
@@ -11,10 +11,10 @@ import {
   Lock,
   SlidersHorizontal
 } from 'lucide-vue-next';
-
 import { sounds } from '../data';
 import { clsx } from 'clsx';
 import { useLanguage } from '../context/language';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const props = defineProps({
   isPremium: Boolean
@@ -32,43 +32,40 @@ const iconMap = {
   Sparkles
 };
 
-// PRESET VOLUMES
 const PRESETS = [
-  { id: 'focus', nameKey: 'preset.focus', volumes: { rain: 40, fire: 20, forest: 0, wind: 0, waves: 0, universe: 0 } },
-  { id: 'nature', nameKey: 'preset.nature', volumes: { rain: 20, fire: 0, forest: 60, waves: 0, wind: 0, universe: 0 } },
-  { id: 'work', nameKey: 'preset.work', volumes: { rain: 25, fire: 10, forest: 20, waves: 0, wind: 0, universe: 0 }, premium: true },
-  { id: 'study', nameKey: 'preset.study', volumes: { rain: 35, fire: 25, forest: 15, waves: 0, wind: 0, universe: 0 }, premium: true },
-  { id: 'night', nameKey: 'preset.night', volumes: { rain: 0, fire: 0, forest: 0, waves: 35, wind: 35, universe: 30 }, premium: true },
+  { id: 'focus', nameKey: 'preset.focus', volumes: { rain: 42, fire: 16, forest: 0, wind: 0, waves: 0, universe: 0 } },
+  { id: 'nature', nameKey: 'preset.nature', volumes: { rain: 18, fire: 0, forest: 56, waves: 0, wind: 0, universe: 0 } },
+  { id: 'work', nameKey: 'preset.work', volumes: { rain: 24, fire: 12, forest: 18, waves: 0, wind: 0, universe: 0 }, premium: true },
+  { id: 'study', nameKey: 'preset.study', volumes: { rain: 34, fire: 22, forest: 12, waves: 0, wind: 0, universe: 0 }, premium: true },
+  { id: 'night', nameKey: 'preset.night', volumes: { rain: 0, fire: 0, forest: 0, waves: 30, wind: 34, universe: 28 }, premium: true }
 ];
-const PRESET_ORDER = ['focus', 'nature', 'work', 'study', 'night'];
-const orderedPresets = PRESETS
-  .slice()
-  .sort((a, b) => PRESET_ORDER.indexOf(a.id) - PRESET_ORDER.indexOf(b.id));
 
-// REACTIVE VOLUMES
-const volumes = ref(
-  Object.fromEntries(sounds.map(s => [s.id, 0]))
-);
-const activePresetId = ref(null);
+const defaultVolumes = Object.fromEntries(sounds.map((sound) => [sound.id, 0]));
+const [storedVolumes, setStoredVolumes] = useLocalStorage('zenflow-sound-volumes', defaultVolumes);
+const [masterVolume, setMasterVolume] = useLocalStorage('zenflow-master-volume', 85);
+const [activePresetId, setActivePresetId] = useLocalStorage('zenflow-sound-preset', '');
 
-// AUDIO REFERENCES
+const volumes = ref({ ...defaultVolumes, ...storedVolumes.value });
 const audioRefs = ref({});
 
+const activeCount = computed(() => Object.values(volumes.value).filter((volume) => Number(volume) > 0).length);
 
-// INIT AUDIO
+const syncPersistedValues = () => {
+  setStoredVolumes({ ...volumes.value });
+};
+
 onMounted(() => {
   sounds.forEach((sound) => {
     if (!audioRefs.value[sound.id]) {
       const audio = new Audio(sound.url);
       audio.loop = true;
       audio.preload = 'auto';
-      audio.load();
+      audio.volume = ((volumes.value[sound.id] || 0) / 100) * ((masterVolume.value || 100) / 100);
       audioRefs.value[sound.id] = audio;
     }
   });
 });
 
-// CLEAR AUDIO ON UNMOUNT
 onBeforeUnmount(() => {
   Object.values(audioRefs.value).forEach((audio) => {
     audio.pause();
@@ -76,38 +73,55 @@ onBeforeUnmount(() => {
   });
 });
 
-// UPDATE AUDIO WITHOUT AUTO-START (unless explicitly requested)
 const syncAudioVolumes = (newVolumes, startIds = []) => {
   Object.entries(newVolumes).forEach(([id, vol]) => {
     const audio = audioRefs.value[id];
     if (!audio) return;
 
-    audio.volume = vol / 100;
+    const normalized = Math.max(0, Number(vol) || 0) / 100;
+    const master = Math.max(0, Number(masterVolume.value) || 0) / 100;
+    audio.volume = normalized * master;
 
-    if (vol === 0) {
+    if (normalized === 0 || master === 0) {
       audio.pause();
       return;
     }
 
-    if (startIds.includes(id) && audio.paused) {
+    if ((startIds.includes(id) || !audio.paused) && audio.paused) {
       audio.play().catch(() => {});
     }
   });
 };
 
-// SLIDER CHANGE
+watch(
+  masterVolume,
+  () => {
+    syncAudioVolumes(volumes.value);
+  },
+  { deep: false }
+);
+
+watch(
+  storedVolumes,
+  (value) => {
+    volumes.value = { ...defaultVolumes, ...(value || {}) };
+    syncAudioVolumes(volumes.value);
+  },
+  { deep: true }
+);
+
 const handleVolumeChange = (id, value, isLocked) => {
   if (isLocked) {
     emit('open-premium');
     return;
   }
 
-  volumes.value[id] = value;
-  activePresetId.value = null;
+  volumes.value = { ...volumes.value, [id]: value };
+  setActivePresetId('');
+  syncPersistedValues();
   syncAudioVolumes(volumes.value, value > 0 ? [id] : []);
 };
 
-// BUTTON MUTE/UNMUTE
 const toggleMute = (id, isLocked) => {
   if (isLocked) {
     emit('open-premium');
@@ -115,71 +129,91 @@ const toggleMute = (id, isLocked) => {
   }
 
   const nextVolume = volumes.value[id] > 0 ? 0 : 50;
-  volumes.value[id] = nextVolume;
-  activePresetId.value = null;
+  volumes.value = { ...volumes.value, [id]: nextVolume };
+  setActivePresetId('');
+  syncPersistedValues();
   syncAudioVolumes(volumes.value, nextVolume > 0 ? [id] : []);
 };
 
-// APPLY PRESET
 const applyPreset = (preset) => {
   if (preset.premium && !props.isPremium) {
     emit('open-premium');
     return;
   }
+
   volumes.value = { ...volumes.value, ...preset.volumes };
-  activePresetId.value = preset.id;
+  setActivePresetId(preset.id);
+  syncPersistedValues();
+
   const startIds = Object.entries(preset.volumes)
-    .filter(([, vol]) => vol > 0)
+    .filter(([, volume]) => volume > 0)
     .map(([id]) => id);
+
   syncAudioVolumes(volumes.value, startIds);
 };
 
-// MUTE ALL
 const muteAll = () => {
-  const zeroVols = Object.fromEntries(sounds.map(s => [s.id, 0]));
-  volumes.value = zeroVols;
-  activePresetId.value = null;
-  syncAudioVolumes(zeroVols);
+  const zeroVolumes = Object.fromEntries(sounds.map((sound) => [sound.id, 0]));
+  volumes.value = zeroVolumes;
+  setActivePresetId('');
+  syncPersistedValues();
+  syncAudioVolumes(zeroVolumes);
 };
 </script>
 
-
 <template>
-  <div class="glass-panel rounded-[2rem] p-6 w-full">
+  <div class="glass-panel rounded-[2rem] p-5 md:p-6 w-full">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div>
+        <h3 class="text-white font-semibold flex items-center gap-3 text-lg">
+          <div class="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/5">
+            <Volume2 :size="18" class="text-rose-300" />
+          </div>
+          {{ t('sounds.title') }}
+        </h3>
+        <p class="mt-2 text-sm text-white/45">
+          {{ activeCount ? `${t('sounds.active')}: ${activeCount}` : t('sounds.none') }}
+        </p>
+      </div>
 
-    <!-- TITLE -->
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="text-white font-semibold flex items-center gap-3 text-lg">
-        <div class="p-2 bg-white/5 rounded-lg">
-          <Volume2 :size="20" class="text-rose-300" />
-        </div>
-        {{ t('sounds.title') }}
-      </h3>
-
-      <button @click="muteAll" class="text-xs text-white/40 hover:text-white bg-white/5 px-3 py-1.5 rounded-full">
+      <button @click="muteAll" class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/60 transition-colors hover:bg-white/10 hover:text-white">
         {{ t('sounds.mute') }}
       </button>
     </div>
 
-    <!-- PRESETS -->
-    <div class="mb-6">
-      <p class="text-xs font-bold text-white/30 uppercase tracking-wider mb-3 flex items-center gap-2">
+    <div class="mt-5 rounded-[1.6rem] border border-white/8 bg-black/20 p-4">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <p class="text-xs font-bold uppercase tracking-[0.22em] text-white/35">{{ t('sounds.master') }}</p>
+        <span class="text-sm font-semibold text-white/80">{{ masterVolume }}%</span>
+      </div>
+      <input
+        :value="masterVolume"
+        type="range"
+        min="0"
+        max="100"
+        @input="setMasterVolume(Number($event.target.value))"
+        class="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10"
+      />
+    </div>
+
+    <div class="mt-5">
+      <p class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-white/35">
         <SlidersHorizontal :size="12" />
         {{ t('sounds.presets') }}
       </p>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
         <button
-          v-for="preset in orderedPresets"
+          v-for="preset in PRESETS"
           :key="preset.id"
           @click="applyPreset(preset)"
           :class="clsx(
-            'w-full px-3 py-2 rounded-xl text-sm font-medium border transition-all flex items-center justify-center gap-2 text-center',
+            'w-full rounded-2xl border px-3 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 text-center',
             preset.premium && !props.isPremium
-              ? 'bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20'
+              ? 'bg-amber-500/10 border-amber-400/20 text-amber-100 hover:bg-amber-500/16'
               : activePresetId === preset.id
-                ? 'bg-teal-500/25 border-teal-400/60 text-teal-100 shadow-lg shadow-teal-900/40'
-              : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                ? 'bg-cyan-500/18 border-cyan-300/35 text-cyan-50'
+                : 'bg-white/5 border-white/8 text-white/65 hover:bg-white/10 hover:text-white'
           )"
         >
           <Lock v-if="preset.premium && !props.isPremium" :size="12" />
@@ -188,68 +222,58 @@ const muteAll = () => {
       </div>
     </div>
 
-    <!-- SOUND LIST -->
-    <div class="grid grid-cols-1 gap-4">
+    <div class="mt-5 grid grid-cols-1 gap-3">
       <div
         v-for="sound in sounds"
         :key="sound.id"
         :class="clsx(
-          'group flex items-center gap-4 p-4 rounded-2xl transition-all relative border',
+          'group relative flex items-center gap-4 rounded-[1.5rem] border p-4 transition-all',
           sound.isPremium && !props.isPremium
-            ? 'bg-black/20 border-amber-500/10 hover:border-amber-500/30'
+            ? 'border-amber-500/14 bg-amber-500/[0.06]'
             : volumes[sound.id] > 0
-              ? 'bg-white/10 border-white/20 shadow-lg'
-              : 'bg-black/20 border-white/5 hover:bg-black/30 hover:border-white/10'
+              ? 'border-white/16 bg-white/[0.06]'
+              : 'border-white/8 bg-black/20 hover:border-white/14 hover:bg-black/28'
         )"
       >
-        <!-- MUTE BUTTON -->
         <button
           @click="toggleMute(sound.id, sound.isPremium && !props.isPremium)"
           :class="clsx(
-            'w-12 h-12 rounded-xl flex items-center justify-center transition-all z-10',
+            'z-10 flex h-12 w-12 items-center justify-center rounded-2xl transition-all',
             sound.isPremium && !props.isPremium
-              ? 'bg-gradient-to-br from-amber-500/10 to-amber-900/10 text-amber-500'
+              ? 'bg-amber-500/12 text-amber-100'
               : volumes[sound.id] > 0
-                ? `${sound.color} text-white shadow-lg scale-105`
-                : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                ? `${sound.color} text-white shadow-lg`
+                : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
           )"
         >
-          <Lock v-if="sound.isPremium && !props.isPremium" :size="20" />
-          <component v-else :is="iconMap[sound.icon] || Sparkles" :size="22" />
+          <Lock v-if="sound.isPremium && !props.isPremium" :size="18" />
+          <component v-else :is="iconMap[sound.icon] || Sparkles" :size="20" />
         </button>
 
-        <!-- TITLE + SLIDER -->
-        <div class="flex-1 relative z-10">
-          <div class="flex justify-between text-sm text-white/80 mb-2">
-            <span :class="clsx('font-medium tracking-wide', sound.isPremium && !props.isPremium && 'text-amber-200/80')">
+        <div class="flex-1">
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <span :class="clsx('text-sm font-semibold tracking-wide', sound.isPremium && !props.isPremium ? 'text-amber-50' : 'text-white/85')">
               {{ t(`sound.${sound.id}`) }}
             </span>
-            <span v-if="!(sound.isPremium && !props.isPremium)" class="text-xs opacity-60 font-mono">
+            <span v-if="!(sound.isPremium && !props.isPremium)" class="text-xs font-semibold text-white/45">
               {{ volumes[sound.id] }}%
             </span>
           </div>
 
-          <div class="relative h-2 w-full rounded-full bg-black/40 overflow-hidden">
-            <div :class="clsx('absolute top-0 left-0 h-full transition-all rounded-full', sound.color)"
-                 :style="{ width: volumes[sound.id] + '%' }">
-            </div>
-
+          <div class="relative h-2.5 overflow-hidden rounded-full bg-black/40">
+            <div :class="clsx('absolute inset-y-0 left-0 rounded-full transition-all', sound.color)" :style="{ width: `${volumes[sound.id]}%` }" />
             <input
               type="range"
               min="0"
               max="100"
               :value="volumes[sound.id]"
               :disabled="sound.isPremium && !props.isPremium"
-              @input="handleVolumeChange(sound.id, +$event.target.value, sound.isPremium && !props.isPremium)"
-              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              @input="handleVolumeChange(sound.id, Number($event.target.value), sound.isPremium && !props.isPremium)"
+              class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             />
           </div>
         </div>
-
-        <div v-if="sound.isPremium && !props.isPremium"
-             class="absolute inset-0 bg-gradient-to-r from-transparent via-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
       </div>
     </div>
   </div>
 </template>
-

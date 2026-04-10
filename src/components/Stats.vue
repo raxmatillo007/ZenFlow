@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { BarChart3, TrendingUp, Clock, Calendar, History, Brain } from 'lucide-vue-next';
+import { BarChart3, TrendingUp, Clock, Calendar, History, Brain, Flame } from 'lucide-vue-next';
 import { clsx } from 'clsx';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useLanguage } from '../context/language';
@@ -13,100 +13,212 @@ const { t } = useLanguage();
 const [sessions] = useLocalStorage('zenflow-sessions', []);
 const view = ref('overview');
 
-const safeSessions = computed(() => (Array.isArray(sessions.value) ? sessions.value : []));
-const orderedSessions = computed(() => {
-  return safeSessions.value
-    .filter((s) => s && typeof s === 'object' && Number(s.duration) > 0)
-    .slice()
-    .sort((a, b) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+const safeSessions = computed(() => (
+  Array.isArray(sessions.value)
+    ? sessions.value
+        .filter((session) => session && typeof session === 'object' && Number(session.duration) > 0)
+        .map((session) => ({
+          ...session,
+          timestamp: Number(session.timestamp) || Date.now(),
+          duration: Number(session.duration) || 0
+        }))
+    : []
+));
+
+const orderedSessions = computed(() => [...safeSessions.value].sort((a, b) => b.timestamp - a.timestamp));
+
+const totalMinutes = computed(() => safeSessions.value.reduce((acc, curr) => acc + curr.duration, 0));
+const averageSession = computed(() => (safeSessions.value.length ? Math.round(totalMinutes.value / safeSessions.value.length) : 0));
+const bestSession = computed(() => safeSessions.value.reduce((best, session) => Math.max(best, session.duration), 0));
+
+const sameDay = (dateA, dateB) =>
+  dateA.getFullYear() === dateB.getFullYear() &&
+  dateA.getMonth() === dateB.getMonth() &&
+  dateA.getDate() === dateB.getDate();
+
+const todayMinutes = computed(() => {
+  const now = new Date();
+  return safeSessions.value.reduce((sum, session) => {
+    const stamp = new Date(session.timestamp);
+    return sameDay(stamp, now) ? sum + session.duration : sum;
+  }, 0);
 });
 
-const totalMinutes = computed(() => safeSessions.value.reduce((acc, curr) => acc + (Number(curr.duration) || 0), 0));
-const hours = computed(() => Math.floor(totalMinutes.value / 60));
-const minutes = computed(() => totalMinutes.value % 60);
+const thisWeekMinutes = computed(() => {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  const day = startOfWeek.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  startOfWeek.setDate(startOfWeek.getDate() - diff);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  return safeSessions.value.reduce((sum, session) => {
+    const stamp = new Date(session.timestamp);
+    return stamp >= startOfWeek ? sum + session.duration : sum;
+  }, 0);
+});
+
+const weekdaySeries = computed(() => {
+  const formatter = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
+  const now = new Date();
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(now);
+    day.setDate(now.getDate() - (6 - index));
+    day.setHours(0, 0, 0, 0);
+    return {
+      key: day.toISOString(),
+      label: formatter.format(day),
+      value: 0,
+      isToday: sameDay(day, now)
+    };
+  });
+
+  safeSessions.value.forEach((session) => {
+    const stamp = new Date(session.timestamp);
+    stamp.setHours(0, 0, 0, 0);
+    const dayKey = stamp.toISOString();
+    const match = days.find((day) => day.key === dayKey);
+    if (match) match.value += session.duration;
+  });
+
+  const max = Math.max(...days.map((day) => day.value), 1);
+  return days.map((day) => ({
+    ...day,
+    percent: Math.max((day.value / max) * 100, day.value > 0 ? 12 : 6)
+  }));
+});
+
+const recentSessions = computed(() => {
+  const limit = props.isPremium ? 50 : 12;
+  return orderedSessions.value.slice(0, limit);
+});
 </script>
 
 <template>
-  <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 w-full relative overflow-hidden flex flex-col min-h-[300px] max-h-[520px]">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-white font-semibold flex items-center gap-2">
-        <TrendingUp :size="20" />
-        <span>{{ t('stats.title') }}</span>
-      </h3>
-      <div class="flex bg-black/20 rounded-lg p-1">
+  <div class="glass-panel rounded-[2rem] p-5 md:p-6 w-full relative overflow-hidden flex flex-col min-h-[340px]">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h3 class="text-white font-semibold flex items-center gap-3 text-lg">
+          <div class="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/5">
+            <TrendingUp :size="18" class="text-emerald-300" />
+          </div>
+          <span>{{ t('stats.title') }}</span>
+        </h3>
+        <p class="mt-2 text-sm text-white/45">{{ t('stats.weekly') }}</p>
+      </div>
+      <div class="flex rounded-xl border border-white/8 bg-black/20 p-1">
         <button
           @click="view = 'overview'"
-          :class="clsx('p-1.5 rounded-md transition-all', view === 'overview' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white')"
-          :title="t('stats.overview')"
+          :class="clsx('rounded-lg px-3 py-1.5 text-xs font-semibold transition-all', view === 'overview' ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white')"
         >
-          <BarChart3 :size="14" />
+          {{ t('stats.overview') }}
         </button>
         <button
           @click="view = 'history'"
-          :class="clsx('p-1.5 rounded-md transition-all', view === 'history' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white')"
-          :title="t('stats.history')"
+          :class="clsx('rounded-lg px-3 py-1.5 text-xs font-semibold transition-all', view === 'history' ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white')"
         >
-          <History :size="14" />
+          {{ t('stats.history') }}
         </button>
       </div>
     </div>
 
-    <div class="flex-1 transition-all duration-500 flex flex-col gap-3">
+    <div class="mt-5 flex-1">
       <template v-if="view === 'overview'">
-        <div class="grid grid-cols-2 gap-3">
-          <div class="bg-black/20 p-4 rounded-2xl">
-            <div class="flex items-center gap-2 text-white/60 mb-1">
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div class="rounded-2xl border border-white/8 bg-black/20 p-4">
+            <div class="flex items-center gap-2 text-white/50">
               <Clock :size="14" />
               <span class="text-xs">{{ t('stats.totalFocus') }}</span>
             </div>
-            <div class="text-2xl font-bold text-white">{{ hours }}h {{ minutes }}m</div>
-            <div class="text-xs text-green-400 mt-1">Live</div>
+            <div class="mt-2 text-2xl font-semibold text-white">{{ totalMinutes }}</div>
+            <div class="text-xs text-white/40">{{ t('timer.minutes') }}</div>
           </div>
 
-          <div class="bg-black/20 p-4 rounded-2xl">
-            <div class="flex items-center gap-2 text-white/60 mb-1">
+          <div class="rounded-2xl border border-white/8 bg-black/20 p-4">
+            <div class="flex items-center gap-2 text-white/50">
               <Calendar :size="14" />
-              <span class="text-xs">{{ t('stats.sessions') }}</span>
+              <span class="text-xs">{{ t('stats.today') }}</span>
             </div>
-            <div class="text-2xl font-bold text-white">{{ safeSessions.length }}</div>
-            <div class="text-xs text-orange-400 mt-1">Updated</div>
+            <div class="mt-2 text-2xl font-semibold text-white">{{ todayMinutes }}</div>
+            <div class="text-xs text-white/40">{{ t('timer.minutes') }}</div>
+          </div>
+
+          <div class="rounded-2xl border border-white/8 bg-black/20 p-4">
+            <div class="flex items-center gap-2 text-white/50">
+              <BarChart3 :size="14" />
+              <span class="text-xs">{{ t('stats.average') }}</span>
+            </div>
+            <div class="mt-2 text-2xl font-semibold text-white">{{ averageSession }}</div>
+            <div class="text-xs text-white/40">{{ t('timer.minutes') }}</div>
+          </div>
+
+          <div class="rounded-2xl border border-white/8 bg-black/20 p-4">
+            <div class="flex items-center gap-2 text-white/50">
+              <Flame :size="14" />
+              <span class="text-xs">{{ t('stats.best') }}</span>
+            </div>
+            <div class="mt-2 text-2xl font-semibold text-white">{{ bestSession }}</div>
+            <div class="text-xs text-white/40">{{ t('timer.minutes') }}</div>
           </div>
         </div>
 
-        <div class="flex-1 bg-black/20 p-4 rounded-2xl flex items-end justify-between gap-1 px-2 pb-2 min-h-[100px]">
-          <div
-            v-for="(h, i) in [40, 65, 30, 80, 55, 90, 70]"
-            :key="i"
-            class="w-full bg-white/10 rounded-t-sm hover:bg-rose-500/50 transition-colors relative group"
-            :style="{ height: `${h}%` }"
-          >
-            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              {{ h }} min
+        <div class="mt-4 rounded-[1.75rem] border border-white/8 bg-black/20 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.22em] text-white/35">{{ t('stats.weekly') }}</p>
+              <p class="mt-1 text-lg font-semibold text-white">{{ thisWeekMinutes }} {{ t('timer.minutes') }}</p>
+            </div>
+            <div class="rounded-full border border-emerald-400/18 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+              {{ safeSessions.length }} {{ t('stats.sessions').toLowerCase() }}
+            </div>
+          </div>
+
+          <div class="mt-5 grid grid-cols-7 items-end gap-2">
+            <div v-for="day in weekdaySeries" :key="day.key" class="flex flex-col items-center gap-2">
+              <div
+                :class="clsx(
+                  'flex w-full items-end justify-center rounded-t-2xl transition-all',
+                  day.isToday ? 'bg-gradient-to-t from-cyan-400 to-emerald-300' : 'bg-white/12 hover:bg-white/18'
+                )"
+                :style="{ height: `${Math.max(day.percent, 8)}px`, minHeight: '24px' }"
+              >
+                <span class="mb-2 text-[10px] font-semibold text-slate-950" v-if="day.value">{{ day.value }}</span>
+              </div>
+              <span :class="clsx('text-[11px] font-semibold', day.isToday ? 'text-white' : 'text-white/45')">{{ day.label }}</span>
             </div>
           </div>
         </div>
       </template>
 
-      <div v-else class="flex-1 bg-black/20 rounded-2xl overflow-hidden">
-        <div v-if="orderedSessions.length === 0" class="h-full flex flex-col items-center justify-center text-white/30 text-sm p-4">
-          <History :size="24" class="mb-2 opacity-50" />
-          {{ t('stats.empty') }}
+      <div v-else class="flex h-full flex-col rounded-[1.75rem] border border-white/8 bg-black/20 overflow-hidden">
+        <div v-if="recentSessions.length === 0" class="grid flex-1 place-items-center p-6 text-center text-white/30">
+          <div>
+            <History :size="28" class="mx-auto mb-3 opacity-50" />
+            <p>{{ t('stats.empty') }}</p>
+          </div>
         </div>
-        <div v-else class="divide-y divide-white/5 overflow-y-auto custom-scrollbar max-h-[320px]">
-          <div v-for="(session, idx) in orderedSessions" :key="idx" class="p-3 flex items-center justify-between hover:bg-white/5 transition-colors">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400">
-                <Brain :size="14" />
+
+        <div v-else class="max-h-[360px] divide-y divide-white/6 overflow-y-auto custom-scrollbar">
+          <div v-for="(session, idx) in recentSessions" :key="`${session.timestamp}-${idx}`" class="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-white/[0.03]">
+            <div class="flex min-w-0 items-center gap-3">
+              <div class="grid h-10 w-10 place-items-center rounded-2xl bg-rose-500/12 text-rose-200">
+                <Brain :size="16" />
               </div>
-              <div>
-                <div class="text-sm text-white font-medium">{{ t('stats.session_name') }}</div>
+              <div class="min-w-0">
+                <div class="truncate text-sm font-semibold text-white">{{ t('stats.session_name') }}</div>
                 <div class="text-xs text-white/40">
                   {{ new Date(session.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}
                 </div>
               </div>
             </div>
-            <div class="text-sm font-bold text-white/80">{{ session.duration }} {{ t('timer.minutes') }}</div>
+            <div class="rounded-full border border-white/8 bg-white/5 px-3 py-1 text-sm font-semibold text-white/80">
+              {{ session.duration }} {{ t('timer.minutes') }}
+            </div>
           </div>
+        </div>
+
+        <div v-if="!props.isPremium && recentSessions.length > 0" class="border-t border-white/6 px-4 py-3 text-xs text-white/40">
+          {{ t('stats.freeLimit') }}
         </div>
       </div>
     </div>
