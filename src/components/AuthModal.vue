@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { X, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-vue-next';
 import { useLanguage } from '../context/language';

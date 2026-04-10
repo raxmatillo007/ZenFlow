@@ -96,7 +96,7 @@ const recentSessions = computed(() => {
 
 <template>
   <div class="glass-panel rounded-[2rem] p-5 md:p-6 w-full relative overflow-hidden flex flex-col min-h-[340px]">
-    <div class="flex items-center justify-between gap-3">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h3 class="text-white font-semibold flex items-center gap-3 text-lg">
           <div class="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/5">
@@ -106,7 +106,7 @@ const recentSessions = computed(() => {
         </h3>
         <p class="mt-2 text-sm text-white/45">{{ t('stats.weekly') }}</p>
       </div>
-      <div class="flex rounded-xl border border-white/8 bg-black/20 p-1">
+      <div class="flex self-start rounded-xl border border-white/8 bg-black/20 p-1 sm:self-auto">
         <button
           @click="view = 'overview'"
           :class="clsx('rounded-lg px-3 py-1.5 text-xs font-semibold transition-all', view === 'overview' ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white')"

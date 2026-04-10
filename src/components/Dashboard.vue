@@ -282,8 +282,8 @@ const getCelebrationCubeClass = (key: string) => String(getRewardCubeClass(key))
     <PremiumModal :is-open="isModalOpen" @close="isModalOpen = false" @upgrade="handleUpgrade" />
     <BillingModal :is-open="isBillingOpen" @close="isBillingOpen = false" @upgraded="() => { setIsPremium(true); isBillingOpen = false; }" />
     <SettingsModal :is-open="isSettingsOpen" :settings="timerSettings" @close="isSettingsOpen = false" @save="setTimerSettings" />
-    <div class="relative z-10 mx-auto max-w-[1600px] px-3 py-4 pb-10 md:px-6 md:py-8">
-      <header class="glass-panel rounded-[2rem] px-4 py-4 md:px-6">
+    <div class="relative z-10 mx-auto w-full max-w-[1440px] px-4 py-4 pb-10 md:px-6 md:py-8 xl:px-8">
+      <header class="glass-panel overflow-hidden rounded-[2rem] px-4 py-4 md:px-6">
         <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div class="flex items-start gap-4">
             <div :class="clsx('grid h-12 w-12 place-items-center rounded-[1.2rem] bg-gradient-to-br shadow-lg', themeClasses.accent)"><Sparkles class="text-white" :size="22" /></div>
@@ -330,19 +330,19 @@ const getCelebrationCubeClass = (key: string) => String(getRewardCubeClass(key))
       </div>
 
       <template v-else>
-        <div class="mt-5 hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.8fr)]">
-          <div class="space-y-6">
+        <div class="mt-5 hidden items-start gap-6 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:grid-cols-[minmax(0,1.28fr)_minmax(360px,0.82fr)]">
+          <div class="min-w-0 space-y-6">
             <Timer :settings="timerSettings" @complete="(mins) => addXp(mins * 10)" />
-            <div class="grid gap-6 xl:grid-cols-2">
-              <SoundMixer :is-premium="isPremium" @open-premium="isModalOpen = true" />
-              <AIAssistant :is-premium="isPremium" @open-premium="isModalOpen = true" />
+            <div class="grid min-w-0 gap-6 xl:grid-cols-2">
+              <div class="min-w-0"><SoundMixer :is-premium="isPremium" @open-premium="isModalOpen = true" /></div>
+              <div class="min-w-0"><AIAssistant :is-premium="isPremium" @open-premium="isModalOpen = true" /></div>
             </div>
-            <div class="grid gap-6 xl:grid-cols-2">
-              <Stats :is-premium="isPremium" />
-              <RewardCollection :unlocked-rewards="unlockedRewards" :latest-reward-key="latestRewardKey" :level="level" :next-reward-level="nextRewardLevel" />
+            <div class="grid min-w-0 gap-6 xl:grid-cols-2">
+              <div class="min-w-0"><Stats :is-premium="isPremium" /></div>
+              <div class="min-w-0"><RewardCollection :unlocked-rewards="unlockedRewards" :latest-reward-key="latestRewardKey" :level="level" :next-reward-level="nextRewardLevel" /></div>
             </div>
           </div>
-          <div class="space-y-6">
+          <div class="min-w-0 space-y-6 lg:sticky lg:top-6">
             <Gamification :xp="xp" :level="level" :is-premium="isPremium" :total-xp="totalXp" :xp-needed="xpNeededNow" :oak-stage-key="oakStage.key" :oak-emoji="oakStage.emoji" :level-rank-key="levelRankKey" :streak="streak" :streak-multiplier="streakMultiplier" :next-reward-level="nextRewardLevel" :unlocked-rewards="unlockedRewards" :latest-reward-key="latestRewardKey" :daily-goal-progress="dailyGoalProgress" :daily-goal-target="dailyGoal.targetXp" :daily-goal-current="dailyGoal.currentXp" :daily-goal-completed="dailyGoal.completed" :today-focus-minutes="todayFocusMinutes" @open-detail="isProgressDetailOpen = true" />
             <TaskList />
             <BreathingExercise :is-premium="isPremium" @open-premium="isModalOpen = true" />

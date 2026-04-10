@@ -52,7 +52,7 @@ const rewardVisuals = {
 </script>
 
 <template>
-  <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-5 w-full relative overflow-hidden">
+  <div class="glass-panel rounded-[2rem] p-5 w-full relative overflow-hidden">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-white font-semibold text-sm tracking-wide">{{ t('progress.rewards') }}</h3>
       <span class="text-xs text-white/50">{{ unlockedCount }}</span>

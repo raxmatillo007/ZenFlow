@@ -133,7 +133,7 @@ const getPriorityColor = (p: string) => {
       </div>
     </div>
 
-    <div class="mt-4 grid grid-cols-3 gap-3">
+    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
       <div class="rounded-2xl border border-white/8 bg-black/20 p-3">
         <p class="text-[11px] uppercase tracking-[0.18em] text-white/35">{{ t('tasks.completed') }}</p>
         <p class="mt-2 text-lg font-semibold text-white">{{ completedTasks }}</p>
@@ -187,22 +187,24 @@ const getPriorityColor = (p: string) => {
       </div>
     </form>
 
-    <div class="mt-5 flex flex-wrap items-center gap-2">
-      <button
-        v-for="tab in ['all', 'active', 'done']"
-        :key="tab"
-        @click="filter = tab"
-        :class="clsx(
-          'rounded-full border px-3 py-1.5 text-xs font-semibold transition-all',
-          filter === tab ? 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100' : 'border-white/8 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
-        )"
-      >
-        {{ t(`tasks.${tab}`) }}
-      </button>
+    <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          v-for="tab in ['all', 'active', 'done']"
+          :key="tab"
+          @click="filter = tab"
+          :class="clsx(
+            'rounded-full border px-3 py-1.5 text-xs font-semibold transition-all',
+            filter === tab ? 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100' : 'border-white/8 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+          )"
+        >
+          {{ t(`tasks.${tab}`) }}
+        </button>
+      </div>
       <button
         v-if="completedTasks"
         @click="clearDone"
-        class="ml-auto rounded-full border border-rose-400/20 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-100 transition-colors hover:bg-rose-500/16"
+        class="w-full rounded-full border border-rose-400/20 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-100 transition-colors hover:bg-rose-500/16 sm:w-auto"
       >
         {{ t('tasks.clearDone') }}
       </button>

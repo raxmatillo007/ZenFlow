@@ -53,9 +53,9 @@ const rewardVisuals = {
 </script>
 
 <template>
-  <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 w-full mb-6 relative overflow-hidden">
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-center gap-3">
+  <div class="glass-panel rounded-[2rem] p-5 md:p-6 w-full relative overflow-hidden">
+    <div class="mb-4 flex items-start justify-between gap-4">
+      <div class="flex min-w-0 items-center gap-3">
         <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 text-white font-bold text-xl">
           {{ props.level }}
         </div>
@@ -67,8 +67,8 @@ const rewardVisuals = {
         </div>
       </div>
 
-      <div class="text-right">
-        <div class="flex items-center gap-1 justify-end text-amber-400 font-bold">
+      <div class="shrink-0 text-right">
+        <div class="flex items-center justify-end gap-1 font-bold text-amber-400">
           <Zap :size="16" />
           <span>{{ props.totalXp || 0 }} XP</span>
         </div>
@@ -84,17 +84,17 @@ const rewardVisuals = {
       </div>
     </div>
 
-    <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 mb-4">
-      <div class="flex items-center gap-4 justify-between">
+    <div class="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div :class="clsx(progress > 75 && 'animate-breathe')">
           <OakTree :level="props.level" />
         </div>
-        <div class="flex-1">
+        <div class="min-w-0 flex-1">
           <p class="text-emerald-200 text-xs uppercase tracking-[0.2em]">{{ t('oak.growth') }}</p>
           <p class="text-white text-lg font-semibold">{{ t(props.oakStageKey || 'oak.stage.seed') }}</p>
           <p class="text-white/60 text-xs mt-1">{{ t('oak.next_reward') }}: {{ props.nextRewardLevel }}</p>
         </div>
-        <div class="relative w-12 h-12">
+        <div class="relative h-12 w-12 self-end sm:self-auto">
           <svg viewBox="0 0 44 44" class="w-12 h-12 -rotate-90">
             <circle cx="22" cy="22" r="18" stroke="currentColor" stroke-width="4" fill="none" class="text-white/15" />
             <circle
@@ -141,9 +141,9 @@ const rewardVisuals = {
         <div class="absolute inset-0 bg-white/20 animate-pulse" />
       </div>
     </div>
-    <div class="flex items-center justify-between text-xs text-white/60 mb-4">
+    <div class="mb-4 flex items-center justify-between gap-3 text-xs text-white/60">
       <span>{{ props.xp || 0 }} / {{ props.xpNeeded || 0 }} {{ t('xp') }}</span>
-      <span>{{ t('nextLevel') }}: {{ (Number(props.level) || 0) + 1 }}</span>
+      <span class="shrink-0">{{ t('nextLevel') }}: {{ (Number(props.level) || 0) + 1 }}</span>
     </div>
 
     <div class="rounded-xl border border-white/10 bg-black/20 p-3 min-h-[72px] flex items-center gap-3">

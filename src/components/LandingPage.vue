@@ -160,9 +160,9 @@ onBeforeUnmount(() => {
       </div>
     </nav>
 
-    <main class="relative z-10 mx-auto max-w-7xl px-4 pb-16 pt-28 md:px-6 md:pb-24 md:pt-32">
-      <section class="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
-        <div>
+    <main class="relative z-10 mx-auto w-full max-w-7xl px-4 pb-16 pt-28 md:px-6 md:pb-24 md:pt-32">
+      <section class="grid items-center gap-10 lg:min-h-[calc(100vh-11rem)] lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:gap-12">
+        <div class="min-w-0">
           <div class="badge-chip text-rose-100/90">
             <span class="inline-flex h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_14px_rgba(251,113,133,0.8)]" />
             {{ t('landing.badge') }}
@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
             {{ t('landing.desc') }}
           </p>
 
-          <div class="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div class="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
             <button @click="emit('get-started')" class="inline-flex items-center justify-center gap-2 rounded-[1.4rem] bg-gradient-to-r from-rose-500 to-orange-500 px-6 py-4 text-base font-bold text-white shadow-xl shadow-rose-500/25 transition-transform hover:scale-[1.01] active:scale-[0.98]">
               {{ t('start') }}
               <ArrowRight :size="20" />
@@ -227,7 +227,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="relative">
+        <div class="relative min-w-0">
           <div class="glass-panel rounded-[2rem] p-5 md:p-6">
             <div class="flex items-center justify-between">
               <div>
@@ -290,7 +290,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section class="mt-16 grid gap-6 lg:grid-cols-2">
+      <section class="mt-16 grid items-start gap-6 lg:grid-cols-2">
         <div class="glass-panel rounded-[2rem] p-6">
           <h2 class="font-display text-3xl font-bold">{{ t('landing.pricing.title') }}</h2>
           <p class="mt-3 max-w-xl text-white/55">

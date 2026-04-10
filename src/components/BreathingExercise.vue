@@ -83,14 +83,14 @@ const selectPattern = (p) => {
 </script>
 
 <template>
-  <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 w-full relative overflow-hidden flex flex-col items-center">
-    <div class="w-full flex items-center justify-between mb-6">
+  <div class="glass-panel rounded-[2rem] p-5 md:p-6 w-full relative overflow-hidden flex flex-col items-center">
+    <div class="mb-6 flex w-full items-start justify-between gap-3">
       <h3 class="text-white font-semibold flex items-center gap-2">
         <Wind :size="20" class="text-teal-400" />
         <span>{{ t('breath.title') }}</span>
       </h3>
 
-      <div class="flex gap-1 bg-black/20 p-1 rounded-lg">
+      <div class="flex shrink-0 gap-1 rounded-lg bg-black/20 p-1">
         <button
           v-for="p in ['box', 'relax', 'energy']"
           :key="p"
