@@ -170,14 +170,14 @@ const getPriorityColor = (p: string) => {
         </button>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="custom-scrollbar -mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         <button
           v-for="p in ['low', 'medium', 'high']"
           :key="p"
           type="button"
           @click="priority = p"
           :class="clsx(
-            'rounded-full border px-3 py-1.5 text-xs font-medium transition-all capitalize flex items-center gap-1.5',
+            'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-all capitalize flex items-center gap-1.5 whitespace-nowrap',
             priority === p ? getPriorityColor(p) : 'bg-white/5 border-white/8 text-white/45 hover:bg-white/10 hover:text-white'
           )"
         >
@@ -188,13 +188,13 @@ const getPriorityColor = (p: string) => {
     </form>
 
     <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="custom-scrollbar -mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
         <button
           v-for="tab in ['all', 'active', 'done']"
           :key="tab"
           @click="filter = tab"
           :class="clsx(
-            'rounded-full border px-3 py-1.5 text-xs font-semibold transition-all',
+            'shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap',
             filter === tab ? 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100' : 'border-white/8 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
           )"
         >

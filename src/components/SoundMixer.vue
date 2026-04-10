@@ -196,29 +196,38 @@ const muteAll = () => {
       />
     </div>
 
-    <div class="mt-5">
-      <p class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-white/35">
-        <SlidersHorizontal :size="12" />
-        {{ t('sounds.presets') }}
-      </p>
+    <div class="mt-5 min-w-0">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <p class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-white/35">
+          <SlidersHorizontal :size="12" />
+          {{ t('sounds.presets') }}
+        </p>
+        <span class="text-[11px] font-medium text-white/35">Swipe</span>
+      </div>
 
-      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+      <div class="custom-scrollbar -mx-1 overflow-x-auto px-1 pb-2">
+        <div class="flex min-w-max items-center gap-2">
         <button
           v-for="preset in PRESETS"
           :key="preset.id"
           @click="applyPreset(preset)"
           :class="clsx(
-            'w-full rounded-2xl border px-3 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 text-center',
+            'group relative inline-flex shrink-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full border px-4 py-2.5 text-sm font-semibold tracking-tight transition-all duration-300',
             preset.premium && !props.isPremium
-              ? 'bg-amber-500/10 border-amber-400/20 text-amber-100 hover:bg-amber-500/16'
+              ? 'border-amber-400/25 bg-amber-500/10 text-amber-50 hover:bg-amber-500/16'
               : activePresetId === preset.id
-                ? 'bg-cyan-500/18 border-cyan-300/35 text-cyan-50'
-                : 'bg-white/5 border-white/8 text-white/65 hover:bg-white/10 hover:text-white'
+                ? 'border-cyan-300/35 bg-gradient-to-r from-cyan-400/18 via-sky-400/14 to-emerald-300/16 text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.14)]'
+                : 'border-white/10 bg-white/[0.04] text-white/70 hover:border-white/16 hover:bg-white/[0.08] hover:text-white'
           )"
         >
+          <span
+            v-if="activePresetId === preset.id"
+            class="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.16),transparent)] opacity-70"
+          />
           <Lock v-if="preset.premium && !props.isPremium" :size="12" />
           {{ t(preset.nameKey) }}
         </button>
+        </div>
       </div>
     </div>
 
